@@ -1,0 +1,17 @@
+{
+  "name": "APEX — Mesure de physique",
+  "short_name": "APEX",
+  "description": "Mesure ton physique, classe tes muscles, suis tes séances.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1015",
+  "theme_color": "#0d1015",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
