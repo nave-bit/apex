@@ -48,23 +48,23 @@ const EXERCISES = [
   // ---- PECTORAUX ----
   { key: "bench", name: "Développé couché", icon: "▬", primary: "pecs", eliteRatio: 1.9, bw: false,
     muscles: { pecs: 0.6, triceps: 0.25, epaules: 0.15 }, yt: yt("développé couché"),
-    aliases: ["bench press", "bench press (barbell)", "developpe couche", "barbell bench press"],
+    aliases: ["bench press", "bench press (barbell)", "developpe couche", "barbell bench press", "développé couché (barre)"],
     tips: ["Omoplates serrées, pieds ancrés au sol.", "Barre au bas des pectoraux, coudes à ~45°.", "Descente contrôlée 2 s, pas de rebond."] },
   { key: "bench_db", name: "Développé couché haltères", icon: "▬", primary: "pecs", eliteRatio: 0.85, bw: false, perHand: true,
     muscles: { pecs: 0.6, triceps: 0.25, epaules: 0.15 }, yt: yt("développé couché haltères"),
-    aliases: ["bench press (dumbbell)", "dumbbell bench press", "developpe haltere"],
+    aliases: ["bench press (dumbbell)", "dumbbell bench press", "developpe haltere", "développé couché (haltère)"],
     tips: ["Plus d'amplitude qu'à la barre.", "Contrôle la descente."] },
   { key: "incline", name: "Développé incliné", icon: "◤", primary: "pecs", eliteRatio: 1.6, bw: false,
     muscles: { pecs: 0.6, epaules: 0.25, triceps: 0.15 }, yt: yt("développé incliné barre"),
-    aliases: ["incline bench press", "incline bench press (barbell)"],
+    aliases: ["incline bench press", "incline bench press (barbell)", "développé couché incliné (barre)"],
     tips: ["Banc à 30-45° max.", "Descends vers le haut des pectoraux."] },
   { key: "incline_db", name: "Développé incliné haltères", icon: "◤", primary: "pecs", eliteRatio: 0.7, bw: false, perHand: true,
     muscles: { pecs: 0.6, epaules: 0.25, triceps: 0.15 }, yt: yt("développé incliné haltères"),
-    aliases: ["incline bench press (dumbbell)", "incline dumbbell press"],
+    aliases: ["incline bench press (dumbbell)", "incline dumbbell press", "développé couché incliné (haltère)"],
     tips: ["Congestion du haut des pecs.", "Poignets sous les coudes."] },
   { key: "fly", name: "Écarté", icon: "◇", primary: "pecs", eliteRatio: 0.55, bw: false, perHand: true,
     muscles: { pecs: 0.9, epaules: 0.1 }, yt: yt("écarté haltères pectoraux"),
-    aliases: ["chest fly", "dumbbell fly", "cable fly", "pec deck", "écarté", "ecarte", "iso-lateral chest press"],
+    aliases: ["chest fly", "dumbbell fly", "cable fly", "pec deck", "écarté", "ecarte", "iso-lateral chest press", "butterfly (pec deck)", "écarté poulie un bras", "écartés poulie", "écartés poulie basse"],
     tips: ["Léger fléchi du coude fixe.", "Sens l'étirement, contracte en fermant."] },
   { key: "pushup", name: "Pompes", icon: "⊟", primary: "pecs", eliteRatio: 1.25, bw: true,
     muscles: { pecs: 0.55, triceps: 0.3, epaules: 0.15 }, yt: yt("pompes"),
@@ -74,15 +74,15 @@ const EXERCISES = [
   // ---- DOS ----
   { key: "deadlift", name: "Soulevé de terre", icon: "⎯", primary: "dos", eliteRatio: 3.0, bw: false,
     muscles: { dos: 0.35, ischios: 0.3, fessiers: 0.25, quads: 0.1 }, yt: yt("soulevé de terre deadlift"),
-    aliases: ["deadlift", "deadlift (barbell)", "conventional deadlift", "souleve de terre"],
+    aliases: ["deadlift", "deadlift (barbell)", "conventional deadlift", "souleve de terre", "soulevé de terre (barre)"],
     tips: ["Barre collée aux tibias, dos plat.", "Pousse le sol avec les jambes.", "Verrouille hanches et genoux ensemble."] },
   { key: "rdl", name: "Soulevé de terre roumain", icon: "⌐", primary: "ischios", eliteRatio: 2.4, bw: false,
     muscles: { ischios: 0.5, fessiers: 0.35, dos: 0.15 }, yt: yt("soulevé de terre roumain RDL"),
-    aliases: ["romanian deadlift", "rdl", "romanian deadlift (barbell)"],
+    aliases: ["romanian deadlift", "rdl", "romanian deadlift (barbell)", "soulevé de terre jambes tendues", "soulevé de terre roumain (barre)"],
     tips: ["Jambes quasi tendues.", "Hanches vers l'arrière, dos plat."] },
   { key: "pullup", name: "Tractions", icon: "⊓", primary: "dos", eliteRatio: 1.0, bw: true,
     muscles: { dos: 0.6, biceps: 0.3, epaules: 0.1 }, yt: yt("tractions pull up"),
-    aliases: ["pull up", "pull ups", "pull up (weighted)", "tractions"],
+    aliases: ["pull up", "pull ups", "pull up (weighted)", "tractions", "tractions"],
     tips: ["Bras tendus au départ, menton au-dessus.", "Coudes vers le bas, omoplates serrées."] },
   { key: "chinup", name: "Tractions supination", icon: "⊓", primary: "dos", eliteRatio: 1.05, bw: true,
     muscles: { dos: 0.5, biceps: 0.4, epaules: 0.1 }, yt: yt("tractions supination chin up"),
@@ -90,23 +90,23 @@ const EXERCISES = [
     tips: ["Paumes vers toi.", "Plus de biceps."] },
   { key: "latpull", name: "Tirage vertical", icon: "⊤", primary: "dos", eliteRatio: 1.35, bw: false,
     muscles: { dos: 0.65, biceps: 0.25, epaules: 0.1 }, yt: yt("tirage vertical lat pulldown"),
-    aliases: ["lat pulldown", "lat pulldown (cable)", "pulldown", "tirage vertical"],
+    aliases: ["lat pulldown", "lat pulldown (cable)", "pulldown", "tirage vertical", "tirage poitrine (poulie)"],
     tips: ["Barre vers le haut de la poitrine.", "Bombe le torse."] },
   { key: "row", name: "Rowing barre", icon: "═", primary: "dos", eliteRatio: 1.6, bw: false,
     muscles: { dos: 0.6, biceps: 0.25, epaules: 0.15 }, yt: yt("rowing barre bent over row"),
-    aliases: ["barbell row", "bent over row", "bent over row (barbell)", "rowing barre"],
+    aliases: ["barbell row", "bent over row", "bent over row (barbell)", "rowing barre", "rowing pendlay (barre)"],
     tips: ["Buste à ~45°, dos neutre.", "Tire vers le bas-ventre."] },
   { key: "row_db", name: "Rowing haltère", icon: "═", primary: "dos", eliteRatio: 0.8, bw: false, perHand: true,
     muscles: { dos: 0.6, biceps: 0.25, epaules: 0.15 }, yt: yt("rowing haltère un bras"),
-    aliases: ["dumbbell row", "one arm row", "dumbbell row (single arm)"],
+    aliases: ["dumbbell row", "one arm row", "dumbbell row (single arm)", "rowing un bras poulie"],
     tips: ["Un genou sur le banc, dos plat.", "Tire le coude haut et serré."] },
   { key: "row_cable", name: "Tirage horizontal", icon: "═", primary: "dos", eliteRatio: 1.45, bw: false,
     muscles: { dos: 0.6, biceps: 0.25, epaules: 0.15 }, yt: yt("tirage horizontal poulie seated row"),
-    aliases: ["seated cable row", "cable row", "seated row"],
+    aliases: ["seated cable row", "cable row", "seated row", "rowing assis (machine)", "rowing poulie assis"],
     tips: ["Dos droit, tire vers le nombril.", "Ne te penche pas en arrière."] },
   { key: "facepull", name: "Face pull", icon: "⊰", primary: "dos", eliteRatio: 0.55, bw: false,
     muscles: { dos: 0.4, epaules: 0.6 }, yt: yt("face pull"),
-    aliases: ["face pull", "cable face pull"],
+    aliases: ["face pull", "cable face pull", "tirage vers visage"],
     tips: ["Tire vers le visage, coudes hauts.", "Bon pour la posture."] },
 
   // ---- ÉPAULES ----
@@ -116,61 +116,61 @@ const EXERCISES = [
     tips: ["Gaine abdos et fessiers.", "Passe la tête sous la barre en haut."] },
   { key: "ohp_db", name: "Développé épaules haltères", icon: "▲", primary: "epaules", eliteRatio: 0.62, bw: false, perHand: true,
     muscles: { epaules: 0.65, triceps: 0.25, pecs: 0.1 }, yt: yt("développé épaules haltères"),
-    aliases: ["shoulder press (dumbbell)", "dumbbell shoulder press", "seated shoulder press", "arnold press"],
+    aliases: ["shoulder press (dumbbell)", "dumbbell shoulder press", "seated shoulder press", "arnold press", "développé militaire (haltère)", "presse épaules (haltère)", "shoulder press (machine plates)"],
     tips: ["Plus stable, isole l'épaule.", "Ne verrouille pas brutalement."] },
   { key: "latraise", name: "Élévations latérales", icon: "⊥", primary: "epaules", eliteRatio: 0.32, bw: false, perHand: true,
     muscles: { epaules: 0.95, triceps: 0.05 }, yt: yt("élévations latérales lateral raise"),
-    aliases: ["lateral raise", "lateral raise (dumbbell)", "side raise", "elevations laterales", "cable lateral raise"],
+    aliases: ["lateral raise", "lateral raise (dumbbell)", "side raise", "elevations laterales", "cable lateral raise", "élévation latérale (haltère)", "élévation latérale (poulie)"],
     tips: ["Léger fléchi du coude.", "Mène avec les coudes."] },
   { key: "reardelt", name: "Oiseau (arrière d'épaule)", icon: "⊻", primary: "epaules", eliteRatio: 0.28, bw: false, perHand: true,
     muscles: { epaules: 0.9, dos: 0.1 }, yt: yt("oiseau rear delt fly"),
-    aliases: ["rear delt fly", "reverse fly", "oiseau", "rear delt reverse fly"],
+    aliases: ["rear delt fly", "reverse fly", "oiseau", "rear delt reverse fly", "oiseau (haltère)", "oiseau (machine)"],
     tips: ["Buste penché, écarte vers l'arrière."] },
   { key: "shrug", name: "Shrugs (trapèzes)", icon: "⊼", primary: "epaules", eliteRatio: 1.6, bw: false,
     muscles: { epaules: 0.7, dos: 0.3 }, yt: yt("shrugs trapèzes"),
-    aliases: ["shrug", "shrugs", "barbell shrug", "dumbbell shrug"],
+    aliases: ["shrug", "shrugs", "barbell shrug", "dumbbell shrug", "shrug (haltère)", "shrug (poulie)"],
     tips: ["Monte les épaules vers les oreilles.", "Pause en haut, pas de rotation."] },
 
   // ---- BICEPS ----
   { key: "curl", name: "Curl biceps barre", icon: "↿", primary: "biceps", eliteRatio: 0.78, bw: false,
     muscles: { biceps: 0.9, epaules: 0.1 }, yt: yt("curl biceps barre"),
-    aliases: ["bicep curl", "barbell curl", "bicep curl (barbell)", "curl", "ez bar curl"],
+    aliases: ["bicep curl", "barbell curl", "bicep curl (barbell)", "curl", "ez bar curl", "curl biceps (barre)"],
     tips: ["Coudes fixes le long du corps.", "Contracte en haut, descends lentement."] },
   { key: "curl_db", name: "Curl haltères", icon: "↿", primary: "biceps", eliteRatio: 0.42, bw: false, perHand: true,
     muscles: { biceps: 0.9, epaules: 0.1 }, yt: yt("curl biceps haltères"),
-    aliases: ["dumbbell curl", "bicep curl (dumbbell)", "incline dumbbell curl"],
+    aliases: ["dumbbell curl", "bicep curl (dumbbell)", "incline dumbbell curl", "curl incliné assis (haltère)"],
     tips: ["Supination en montant.", "Pas de balancier."] },
   { key: "hammer", name: "Curl marteau", icon: "↾", primary: "biceps", eliteRatio: 0.46, bw: false, perHand: true,
     muscles: { biceps: 0.8, epaules: 0.2 }, yt: yt("curl marteau hammer curl"),
-    aliases: ["hammer curl", "hammer curl (dumbbell)"],
+    aliases: ["hammer curl", "hammer curl (dumbbell)", "curl marteau (haltère)"],
     tips: ["Prise neutre tout le long.", "Cible le brachial."] },
   { key: "preacher", name: "Curl pupitre", icon: "↿", primary: "biceps", eliteRatio: 0.62, bw: false,
     muscles: { biceps: 0.95, epaules: 0.05 }, yt: yt("curl pupitre preacher curl"),
-    aliases: ["preacher curl", "preacher curl (barbell)", "preacher curl (machine)"],
+    aliases: ["preacher curl", "preacher curl (barbell)", "preacher curl (machine)", "curl pupitre (barre)"],
     tips: ["Bras calés sur le pupitre.", "Isole le pic."] },
 
   // ---- TRICEPS ----
   { key: "dips", name: "Dips", icon: "⊔", primary: "triceps", eliteRatio: 0.85, bw: true,
     muscles: { triceps: 0.5, pecs: 0.35, epaules: 0.15 }, yt: yt("dips triceps"),
-    aliases: ["dip", "dips", "triceps dip", "dips (weighted)", "chest dip"],
+    aliases: ["dip", "dips", "triceps dip", "dips (weighted)", "chest dip", "dips triceps"],
     tips: ["Buste droit = triceps.", "Descends à ~90° au coude."] },
   { key: "triext", name: "Extension triceps poulie", icon: "↧", primary: "triceps", eliteRatio: 0.7, bw: false,
     muscles: { triceps: 0.95, epaules: 0.05 }, yt: yt("extension triceps poulie pushdown"),
-    aliases: ["triceps pushdown", "cable pushdown", "triceps extension", "rope pushdown", "tricep pushdown"],
+    aliases: ["triceps pushdown", "cable pushdown", "triceps extension", "rope pushdown", "tricep pushdown", "extension triceps poulie haute"],
     tips: ["Coudes collés au corps.", "Tends complètement en bas."] },
   { key: "skullcrusher", name: "Barre au front", icon: "↧", primary: "triceps", eliteRatio: 0.75, bw: false,
     muscles: { triceps: 0.95, epaules: 0.05 }, yt: yt("barre au front skullcrusher"),
-    aliases: ["skullcrusher", "lying triceps extension", "ez bar skullcrusher", "triceps extension (barbell)"],
+    aliases: ["skullcrusher", "lying triceps extension", "ez bar skullcrusher", "triceps extension (barbell)", "extension triceps (barre)", "skullcrusher (barre)"],
     tips: ["Coudes fixes, descends vers le front."] },
   { key: "overhead_tri", name: "Extension nuque", icon: "↥", primary: "triceps", eliteRatio: 0.5, bw: false,
     muscles: { triceps: 0.95, epaules: 0.05 }, yt: yt("extension triceps nuque overhead"),
-    aliases: ["overhead triceps extension", "overhead tricep extension"],
+    aliases: ["overhead triceps extension", "overhead tricep extension", "extension des triceps au-dessus de la tête (câble)", "overhead triceps extension (cable)"],
     tips: ["Coudes hauts et serrés.", "Étire bien en bas."] },
 
   // ---- QUADRICEPS ----
   { key: "squat", name: "Squat", icon: "◢", primary: "quads", eliteRatio: 2.7, bw: false,
     muscles: { quads: 0.55, fessiers: 0.3, ischios: 0.15 }, yt: yt("squat barre technique"),
-    aliases: ["squat", "back squat", "barbell squat", "squat (barbell)", "high bar squat"],
+    aliases: ["squat", "back squat", "barbell squat", "squat (barbell)", "high bar squat", "squat (barre)", "squat (haltère)"],
     tips: ["Cuisse parallèle au sol minimum.", "Dos neutre, genoux dans l'axe.", "Pousse dans le talon."] },
   { key: "frontsquat", name: "Squat avant", icon: "◢", primary: "quads", eliteRatio: 2.1, bw: false,
     muscles: { quads: 0.65, fessiers: 0.2, ischios: 0.15 }, yt: yt("front squat squat avant"),
@@ -178,7 +178,7 @@ const EXERCISES = [
     tips: ["Barre sur les épaules, coudes hauts.", "Dos droit."] },
   { key: "legpress", name: "Presse à cuisses", icon: "▰", primary: "quads", eliteRatio: 3.8, bw: false,
     muscles: { quads: 0.6, fessiers: 0.25, ischios: 0.15 }, yt: yt("presse à cuisses leg press"),
-    aliases: ["leg press", "leg press (machine)", "leg press horizontal"],
+    aliases: ["leg press", "leg press (machine)", "leg press horizontal", "presse à cuisses", "presse à cuisses horizontal"],
     tips: ["Pieds largeur d'épaules.", "Ne décolle pas les fessiers."] },
   { key: "lunge", name: "Fentes", icon: "◿", primary: "quads", eliteRatio: 1.0, bw: false, perHand: true,
     muscles: { quads: 0.45, fessiers: 0.4, ischios: 0.15 }, yt: yt("fentes lunges"),
@@ -186,11 +186,11 @@ const EXERCISES = [
     tips: ["Grand pas, genou arrière vers le sol.", "Pousse dans le talon avant."] },
   { key: "legext", name: "Leg extension", icon: "◞", primary: "quads", eliteRatio: 0.9, bw: false,
     muscles: { quads: 1.0 }, yt: yt("leg extension"),
-    aliases: ["leg extension", "leg extension (machine)"],
+    aliases: ["leg extension", "leg extension (machine)", "extension jambes"],
     tips: ["Contracte fort en haut.", "Descente contrôlée."] },
   { key: "hacksquat", name: "Hack squat", icon: "◢", primary: "quads", eliteRatio: 2.5, bw: false,
     muscles: { quads: 0.7, fessiers: 0.2, ischios: 0.1 }, yt: yt("hack squat"),
-    aliases: ["hack squat", "hack squat (machine)"],
+    aliases: ["hack squat", "hack squat (machine)", "hack squat (machine)"],
     tips: ["Dos plaqué, descends bas.", "Plus de quadriceps."] },
 
   // ---- ISCHIOS ----
@@ -200,7 +200,7 @@ const EXERCISES = [
     tips: ["Mouvement lent et contrôlé.", "Contracte en fin de flexion."] },
   { key: "legcurl_seated", name: "Leg curl assis", icon: "◜", primary: "ischios", eliteRatio: 0.8, bw: false,
     muscles: { ischios: 0.9, mollets: 0.1 }, yt: yt("seated leg curl"),
-    aliases: ["seated leg curl", "seated leg curl (machine)"],
+    aliases: ["seated leg curl", "seated leg curl (machine)", "leg curl assis"],
     tips: ["Bassin calé.", "Amplitude complète."] },
 
   // ---- FESSIERS ----
@@ -214,7 +214,7 @@ const EXERCISES = [
     tips: ["Version au sol.", "Serre fort en haut."] },
   { key: "abduction", name: "Abduction (machine)", icon: "◹", primary: "fessiers", eliteRatio: 1.2, bw: false,
     muscles: { fessiers: 0.9, quads: 0.1 }, yt: yt("hip abduction machine fessiers"),
-    aliases: ["hip abduction", "hip abduction (machine)", "abductor"],
+    aliases: ["hip abduction", "hip abduction (machine)", "abductor", "abduction hanche"],
     tips: ["Écarte lentement.", "Petite pause en fin de course."] },
 
   // ---- ABDOS ----
@@ -228,7 +228,7 @@ const EXERCISES = [
     tips: ["Suspendu, monte sans balancer.", "Enroule le bassin."] },
   { key: "crunch", name: "Crunch", icon: "◠", primary: "abdos", eliteRatio: 0.6, bw: false,
     muscles: { abdos: 1.0 }, yt: yt("crunch abdominaux"),
-    aliases: ["crunch", "cable crunch", "sit up", "situp", "ab crunch"],
+    aliases: ["crunch", "cable crunch", "sit up", "situp", "ab crunch", "crunch décliné (lesté)"],
     tips: ["Enroule la colonne.", "Expire en montant."] },
 
   // ---- MOLLETS (corrigés + enrichis) ----
@@ -236,7 +236,7 @@ const EXERCISES = [
     muscles: { mollets: 1.0 }, yt: yt("mollets debout standing calf raise"),
     aliases: ["standing calf raise", "calf raise", "calf raise (machine)", "calf raise (barbell)",
       "standing calf raise (machine)", "calf press", "calf press (machine)", "smith machine calf raise",
-      "mollet", "mollets", "extension mollets", "calves"],
+      "mollet", "mollets", "extension mollets", "calves", "extension mollet debout une jambe (barre)", "extension mollets (machine)"],
     tips: ["Amplitude max : talon bas, pointe haute.", "Pause 1 s en haut et en bas."] },
   { key: "calf_seated", name: "Mollets assis", icon: "◣", primary: "mollets", eliteRatio: 1.5, bw: false,
     muscles: { mollets: 1.0 }, yt: yt("mollets assis seated calf raise"),
@@ -246,6 +246,67 @@ const EXERCISES = [
     muscles: { mollets: 1.0 }, yt: yt("mollets à la presse leg press calf"),
     aliases: ["calf press on leg press", "leg press calf raise", "calf extension"],
     tips: ["Pointe des pieds en bas du plateau.", "Grande amplitude."] },
+  // ---- Exos importés (FR) ----
+  { key: "fr_adduction_hanche", name: "Adduction Hanche", icon: "⊥", primary: "fessiers", eliteRatio: 1.0, bw: false, perHand: false,
+    muscles: { fessiers: 1.0 }, yt: yt("Adduction Hanche"), aliases: ["adduction hanche"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_braquial_de_t_mort", name: "Braquial De T Mort", icon: "↿", primary: "biceps", eliteRatio: 0.5, bw: false, perHand: false,
+    muscles: { biceps: 1.0 }, yt: yt("Braquial De T Mort"), aliases: ["braquial de t mort"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_curl_biceps_poulie", name: "Curl Biceps (Poulie)", icon: "↿", primary: "biceps", eliteRatio: 0.5, bw: false, perHand: false,
+    muscles: { biceps: 1.0 }, yt: yt("Curl Biceps (Poulie)"), aliases: ["curl biceps (poulie)"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_curl_incline_vis_a_vis", name: "Curl Incliné Vis A Vis", icon: "↿", primary: "biceps", eliteRatio: 0.5, bw: false, perHand: false,
+    muscles: { biceps: 1.0 }, yt: yt("Curl Incliné Vis A Vis"), aliases: ["curl incliné vis a vis"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_curl_marteau_poulie", name: "Curl Marteau (Poulie)", icon: "↿", primary: "biceps", eliteRatio: 0.5, bw: false, perHand: false,
+    muscles: { biceps: 1.0 }, yt: yt("Curl Marteau (Poulie)"), aliases: ["curl marteau (poulie)"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_curl_poignet", name: "Curl Poignet", icon: "↿", primary: "biceps", eliteRatio: 0.5, bw: false, perHand: false,
+    muscles: { biceps: 1.0 }, yt: yt("Curl Poignet"), aliases: ["curl poignet"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_curl_poignet_haut", name: "Curl Poignet (Haut)", icon: "↿", primary: "biceps", eliteRatio: 0.5, bw: false, perHand: false,
+    muscles: { biceps: 1.0 }, yt: yt("Curl Poignet (Haut)"), aliases: ["curl poignet (haut)"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_curl_poignet_arriere_deb", name: "Curl Poignet Arrière Debout (Barre)", icon: "↿", primary: "biceps", eliteRatio: 0.5, bw: false, perHand: false,
+    muscles: { biceps: 1.0 }, yt: yt("Curl Poignet Arrière Debout (Barre)"), aliases: ["curl poignet arrière debout (barre)"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_curl_poignets_paumes_ver", name: "Curl Poignets Paumes vers le Haut Assis", icon: "↿", primary: "biceps", eliteRatio: 0.5, bw: false, perHand: false,
+    muscles: { biceps: 1.0 }, yt: yt("Curl Poignets Paumes vers le Haut Assis"), aliases: ["curl poignets paumes vers le haut assis"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_developper_couche_inclin", name: "Développer Couché Incliné Vis A Vis", icon: "◇", primary: "pecs", eliteRatio: 0.7, bw: false, perHand: false,
+    muscles: { pecs: 1.0 }, yt: yt("Développer Couché Incliné Vis A Vis"), aliases: ["développer couché incliné vis a vis"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_developper_vis_a_vis_che", name: "Développer Vis A Vis Chess Press", icon: "◇", primary: "pecs", eliteRatio: 0.7, bw: false, perHand: false,
+    muscles: { pecs: 1.0 }, yt: yt("Développer Vis A Vis Chess Press"), aliases: ["développer vis a vis chess press"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_exo_chelou_de_lo\u00efc", name: "Exo Chelou De Loïc", icon: "◳", primary: "abdos", eliteRatio: 0.5, bw: false, perHand: false,
+    muscles: { abdos: 1.0 }, yt: yt("Exo Chelou De Loïc"), aliases: ["exo chelou de loïc"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_exo_miaou", name: "Exo Miaou", icon: "◳", primary: "abdos", eliteRatio: 0.5, bw: false, perHand: false,
+    muscles: { abdos: 1.0 }, yt: yt("Exo Miaou"), aliases: ["exo miaou"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_exo_triceps_yoga", name: "Exo Triceps Yoga", icon: "↧", primary: "triceps", eliteRatio: 0.5, bw: false, perHand: false,
+    muscles: { triceps: 1.0 }, yt: yt("Exo Triceps Yoga"), aliases: ["exo triceps yoga"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_extension_poignets_assis", name: "Extension Poignets Assis (Barre)", icon: "↿", primary: "biceps", eliteRatio: 0.5, bw: false, perHand: false,
+    muscles: { biceps: 1.0 }, yt: yt("Extension Poignets Assis (Barre)"), aliases: ["extension poignets assis (barre)"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_tirage_corde_bras_tendus", name: "Tirage Corde Bras Tendus", icon: "═", primary: "dos", eliteRatio: 1.0, bw: false, perHand: false,
+    muscles: { dos: 1.0 }, yt: yt("Tirage Corde Bras Tendus"), aliases: ["tirage corde bras tendus"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_tirage_poulie_a_genoux", name: "Tirage Poulie A Genoux", icon: "═", primary: "dos", eliteRatio: 1.0, bw: false, perHand: false,
+    muscles: { dos: 1.0 }, yt: yt("Tirage Poulie A Genoux"), aliases: ["tirage poulie a genoux"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_tirage_poulie_a_genoux_e", name: "Tirage Poulie à Genoux (Élastique)", icon: "═", primary: "dos", eliteRatio: 1.0, bw: false, perHand: false,
+    muscles: { dos: 1.0 }, yt: yt("Tirage Poulie à Genoux (Élastique)"), aliases: ["tirage poulie à genoux (élastique)"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_elevation_frontale_halte", name: "Élévation Frontale (Haltère)", icon: "⊥", primary: "epaules", eliteRatio: 0.3, bw: false, perHand: true,
+    muscles: { epaules: 1.0 }, yt: yt("Élévation Frontale (Haltère)"), aliases: ["élévation frontale (haltère)"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
+  { key: "fr_elevation_frontale_pouli", name: "Élévation Frontale (Poulie)", icon: "⊥", primary: "epaules", eliteRatio: 0.3, bw: false, perHand: false,
+    muscles: { epaules: 1.0 }, yt: yt("Élévation Frontale (Poulie)"), aliases: ["élévation frontale (poulie)"],
+    tips: ["Exercice importé — ajuste la charge et progresse régulièrement."] },
 ];
 const EX_BY_KEY = Object.fromEntries(EXERCISES.map((e) => [e.key, e]));
 const ALIAS_INDEX = {};
@@ -260,10 +321,16 @@ function matchExercise(hevyName) {
 
 /* ====================== XP / LEVEL SYSTEM ============================= */
 /* Chaque série travaillée donne de l'XP au(x) muscle(s) ciblé(s).
-   L'XP décroît avec le temps si le muscle n'est pas retravaillé (demi-vie). */
-const XP_PER_SET = 10;          // XP de base par série complétée
-const XP_HALFLIFE_DAYS = 10;    // l'XP d'un muscle perd la moitié en 10 j sans travail
-const LEVEL_BASE = 100;         // XP pour passer level 1->2 (croît ensuite)
+   - Bonus PERFORMANCE : plus la perf est élevée (proche du rang Élite), plus
+     la série rapporte (×1 à ×3).
+   - Bonus RÉGULARITÉ : un multiplicateur global selon le nb de séances sur 28 j.
+   - L'XP décroît lentement si le muscle n'est pas retravaillé (demi-vie 45 j),
+     avec un plancher : on ne retombe jamais sous une "base acquise".
+   - XP RÉTROACTIF : tout l'historique importé compte (calcul à la date réelle). */
+const XP_PER_SET = 10;            // XP de base par série
+const XP_HALFLIFE_DAYS = 45;      // demi-vie de la part "fraîcheur" (lente)
+const XP_FLOOR_RATIO = 0.55;      // part d'XP qui ne décroît jamais (acquis durable)
+const LEVEL_BASE = 120;
 
 function xpForLevel(level) { return Math.round(LEVEL_BASE * Math.pow(level, 1.5)); }
 function levelFromXP(totalXp) {
@@ -271,15 +338,80 @@ function levelFromXP(totalXp) {
   while (totalXp >= acc + need) { acc += need; lvl++; need = xpForLevel(lvl); }
   return { level: lvl, into: totalXp - acc, need, pct: (totalXp - acc) / need };
 }
-// applique la décroissance depuis la dernière mise à jour
+// décroissance avec plancher : une partie de l'XP reste acquise pour toujours
 function decayXp(xp, lastTs, now = Date.now()) {
   if (!xp || !lastTs) return xp || 0;
-  const days = (now - lastTs) / 864e5;
-  if (days <= 0) return xp;
-  return xp * Math.pow(0.5, days / XP_HALFLIFE_DAYS);
+  const days = (now - lastTs) / 864e5; if (days <= 0) return xp;
+  const floor = xp * XP_FLOOR_RATIO;
+  const fading = xp * (1 - XP_FLOOR_RATIO) * Math.pow(0.5, days / XP_HALFLIFE_DAYS);
+  return floor + fading;
+}
+// multiplicateur de performance d'une série (1 à 3 selon la qualité vs le rang)
+function perfMultiplier(ex, set, bw) {
+  if (!ex || !bw) return 1;
+  const e = ex.isTime ? Number(set.secs) || 0 : estimate1RM(set.weight, set.reps);
+  if (!e) return 1;
+  const score = perfToScore(ex, e, bw);
+  return 1 + score * 2;
+}
+// bonus de régularité : 1.0 à 1.5 selon le nb de séances sur 28 jours
+function regularityMultiplier(history, refTs = Date.now()) {
+  const c = history.filter((s) => { const d = (refTs - +new Date(s.date)) / 864e5; return d >= 0 && d <= 28; }).length;
+  return 1 + Math.min(0.5, c * 0.05);
+}
+/* Recalcule TOUTE l'XP par muscle à partir de l'historique complet (rétroactif). */
+function computeXpFromHistory(history, bw, now = Date.now()) {
+  const acc = {}, lastTs = {};
+  const sorted = [...history].sort((a, b) => +new Date(a.date) - +new Date(b.date));
+  sorted.forEach((s) => {
+    const ts = +new Date(s.date);
+    const reg = regularityMultiplier(sorted, ts);
+    const gain = {};
+    (s.exercises || []).forEach((se) => {
+      const ex = EX_BY_KEY[se.key]; if (!ex) return;
+      se.sets.forEach((set) => {
+        const valid = set.secs || (set.weight && set.reps); if (!valid) return;
+        const mult = perfMultiplier(ex, set, bw) * reg;
+        Object.entries(ex.muscles).forEach(([mk, w]) => { gain[mk] = (gain[mk] || 0) + XP_PER_SET * w * mult; });
+      });
+    });
+    Object.entries(gain).forEach(([mk, g]) => {
+      const prev = acc[mk] ? decayXp(acc[mk], lastTs[mk], ts) : 0;
+      acc[mk] = prev + g; lastTs[mk] = ts;
+    });
+  });
+  const out = {};
+  MUSCLES.forEach((m) => { out[m.key] = acc[m.key] ? { xp: decayXp(acc[m.key], lastTs[m.key], now), lastTs: lastTs[m.key] } : { xp: 0, lastTs: now }; });
+  return out;
 }
 
 /* ===================== SÉANCES PRÉCONSTRUITES ======================== */
+/* ====================== CALLISTHÉNIE ================================= */
+/* Pour chaque figure : niveau + progressions (étapes pour la débloquer). */
+const CALISTHENICS = [
+  { fig: "Pull-up strict", level: "Débutant", emoji: "🆙", muscle: "Dos / Biceps",
+    goal: "Réussir 1 traction stricte complète.",
+    steps: ["Tractions négatives : saute en haut, descends en 5 s (3×5).", "Tractions assistées élastique (3×8).", "Tractions australiennes / rowing inversé (3×10).", "Dead hang : suspension 30 s pour la prise."] },
+  { fig: "Dips", level: "Débutant", emoji: "🔻", muscle: "Triceps / Pecs",
+    goal: "Réussir 5 dips complets aux barres.",
+    steps: ["Dips sur banc, pieds au sol (3×10).", "Dips négatifs aux barres, descente lente (3×5).", "Dips assistés élastique (3×8).", "Renforce le verrouillage en haut (tenue 10 s)."] },
+  { fig: "Pistol squat", level: "Intermédiaire", emoji: "🦵", muscle: "Quadriceps / Équilibre",
+    goal: "Squat complet sur une jambe.",
+    steps: ["Squats sur boîte une jambe (3×6).", "Pistol assisté (TRX, poteau) (3×5).", "Mobilité cheville + équilibre.", "Négatives : descente lente sur une jambe."] },
+  { fig: "L-sit", level: "Intermédiaire", emoji: "📐", muscle: "Abdos / Triceps",
+    goal: "Tenir l'L-sit 10 s, jambes tendues.",
+    steps: ["Support hold (appui bras tendus) 20 s.", "Tuck L-sit (genoux pliés) 10 s.", "Une jambe tendue (alterne).", "Renforce compression (relevés de jambes)."] },
+  { fig: "Muscle-up", level: "Avancé", emoji: "💥", muscle: "Dos / Triceps / Explosivité",
+    goal: "Passer de la traction au dip au-dessus de la barre.",
+    steps: ["Tractions explosives poitrine à la barre (3×5).", "Dips lestés (3×6).", "Transition négative depuis l'appui.", "Muscle-up assisté élastique."] },
+  { fig: "Handstand", level: "Avancé", emoji: "🤸", muscle: "Épaules / Gainage",
+    goal: "Tenir l'équilibre sur les mains 15 s.",
+    steps: ["Renforcement épaules (pike push-up).", "Handstand contre le mur, ventre au mur (30 s).", "Petits décollages du mur pour l'équilibre.", "Travail des doigts pour corriger."] },
+  { fig: "Front lever", level: "Avancé", emoji: "➖", muscle: "Dos / Gainage",
+    goal: "Tenir le corps horizontal sous la barre.",
+    steps: ["Tuck front lever (genoux pliés) 10 s.", "Advanced tuck (dos plat).", "Une jambe tendue.", "Négatives front lever depuis l'inversé."] },
+];
+
 const PRESET_ROUTINES = [
   { id: "preset_fullbody", name: "Full Body Débutant", preset: true,
     desc: "Tout le corps en une séance, 3×/semaine. Idéal pour démarrer.",
@@ -398,6 +530,39 @@ function buildMeals(macros) {
     return { t: s.t, p, c, f, kcal: p * 4 + c * 4 + f * 9, ex: ex[s.t](p, c, f) }; });
 }
 
+/* 7 routines alimentaires par objectif. Chaque routine = 4 repas type (idées).
+   Les quantités exactes restent calculées par buildMeals selon le poids ;
+   ces routines donnent la VARIÉTÉ (quoi manger). */
+const NUTRITION_PLANS = {
+  seche: [
+    { n: "Classique protéinée", meals: ["Œufs brouillés + flocons d'avoine", "Poulet, riz complet, brocolis", "Skyr + amandes", "Cabillaud, haricots verts, salade"] },
+    { n: "Méditerranéenne", meals: ["Yaourt grec, fruits rouges, graines", "Thon, quinoa, légumes grillés", "Blanc de dinde, concombre", "Saumon, courgettes, salade d'épinards"] },
+    { n: "Végétarienne", meals: ["Tofu brouillé, pain complet", "Lentilles, riz, légumes", "Fromage blanc 0%, noix", "Tempeh, patate douce, brocolis"] },
+    { n: "Express bureau", meals: ["Skyr + banane", "Wrap poulet-crudités", "Œufs durs + pomme", "Steak haché 5%, salade composée"] },
+    { n: "Faible glucides", meals: ["Omelette jambon-fromage", "Poulet, avocat, salade", "Thon nature", "Saumon, asperges, beurre"] },
+    { n: "Volume rassasiant", meals: ["Blancs d'œufs, gros bol de légumes", "Dinde, courge, salade verte", "Soupe + skyr", "Poisson blanc, ratatouille"] },
+    { n: "Sucré-salé léger", meals: ["Pancakes flocons-œufs", "Poulet teriyaki, riz, edamame", "Cottage cheese + ananas", "Crevettes, wok de légumes"] },
+  ],
+  maintien: [
+    { n: "Équilibrée standard", meals: ["Pain complet, œufs, avocat", "Bœuf maigre, pâtes complètes, légumes", "Fromage blanc + banane + miel", "Saumon, quinoa, courgettes"] },
+    { n: "Méditerranéenne", meals: ["Yaourt grec, miel, noix", "Poulet, boulgour, ratatouille", "Houmous + crudités", "Sardines, pommes de terre, salade"] },
+    { n: "Asiatique", meals: ["Riz, œufs, edamame", "Bœuf sauté, nouilles, légumes", "Yaourt + fruits", "Saumon teriyaki, riz, brocolis"] },
+    { n: "Végétarienne", meals: ["Porridge lait-avoine, beurre de cacahuète", "Pois chiches, riz, légumes rôtis", "Fromage blanc + granola", "Omelette, patate douce, salade"] },
+    { n: "Sportif simple", meals: ["Tartines beurre de cacahuète, banane", "Poulet, riz, légumes, huile d'olive", "Lait + flocons + whey", "Steak, pâtes, légumes"] },
+    { n: "Batch cooking", meals: ["Overnight oats", "Chili con carne, riz", "Skyr + fruits secs", "Curry de poulet, riz basmati"] },
+    { n: "Gourmande maîtrisée", meals: ["Pain perdu protéiné", "Burger maison (pain complet, steak 5%)", "Yaourt + chocolat noir", "Pâtes bolognaise maison"] },
+  ],
+  prise: [
+    { n: "Prise propre", meals: ["Porridge avoine-lait, beurre de cacahuète, banane", "Riz, poulet, huile d'olive, légumes", "Smoothie lait-whey-flocons-fruits", "Steak, pommes de terre, légumes au beurre"] },
+    { n: "Hypercalorique", meals: ["6 œufs, pain complet, avocat, fromage", "Pâtes, bœuf, sauce tomate, parmesan", "Sandwich poulet + lait entier", "Saumon, riz, huile d'olive"] },
+    { n: "Méditerranéenne", meals: ["Yaourt grec, miel, granola, noix", "Agneau, semoule, légumes, huile", "Pain, houmous, fromage", "Poisson gras, pommes de terre, salade"] },
+    { n: "Végétarienne", meals: ["Tofu, riz complet, oléagineux", "Lentilles, quinoa, fromage, huile", "Smoothie lait-banane-beurre de cacahuète", "Omelette 4 œufs, patate douce, avocat"] },
+    { n: "Shakes & solides", meals: ["Gainer maison (avoine, lait, whey, banane)", "Riz, poulet, huile, légumes", "Pain complet, beurre d'amande, miel", "Bœuf, pâtes, fromage"] },
+    { n: "Asiatique riche", meals: ["Riz frit aux œufs", "Bœuf bulgogi, riz, edamame", "Lait + flocons + cacahuètes", "Saumon teriyaki, nouilles, légumes"] },
+    { n: "Maxi gourmande", meals: ["Pancakes banane-avoine, sirop, œufs", "Burger maison double + frites de patate douce", "Milkshake protéiné", "Lasagnes maison, salade"] },
+  ],
+};
+
 /* --------------------------- HELPERS ---------------------------------- */
 function perfToScore(ex, best1RM, bw) {
   if (!best1RM || !bw) return 0;
@@ -409,6 +574,26 @@ function perfToScore(ex, best1RM, bw) {
 function estimate1RM(weight, reps) {
   const w = Number(weight), r = Number(reps); if (!w || !r) return 0;
   if (r === 1) return Math.round(w); return Math.round(w * (1 + r / 30));
+}
+/* Que faut-il pour atteindre le prochain rang sur un exo ?
+   Renvoie la charge 1RM cible et un texte d'explication. */
+function nextRankTarget(ex, best1RM, bw) {
+  if (!bw) return null;
+  const cur = best1RM ? perfToScore(ex, best1RM, bw) : 0;
+  const { tier, sub, tierIdx, within } = scoreToRank(cur);
+  const perTier = 1 / TIERS.length;
+  // score du palier suivant (sous-niveau supérieur, ou tier suivant)
+  let nextScore;
+  if (cur <= 0) nextScore = perTier / 3;
+  else { const step = perTier / 3; nextScore = Math.min(0.999, (Math.floor(cur / step) + 1) * step); }
+  if (nextScore >= 0.999 && cur >= (TIERS.length - 1) / TIERS.length) return { top: true };
+  // inverse de perfToScore pour trouver la charge cible
+  let target1RM;
+  if (ex.isTime) target1RM = Math.ceil(nextScore * ex.eliteSeconds);
+  else { const eff = nextScore * ex.eliteRatio * bw; target1RM = Math.ceil(ex.bw ? eff - bw : eff); }
+  const nr = scoreToRank(nextScore);
+  return { top: false, target1RM, nextLabel: `${nr.tier.label} ${nr.sub}`, isTime: ex.isTime,
+    delta: best1RM ? Math.max(0, target1RM - best1RM) : target1RM };
 }
 function suggestNext(ex, lastSets) {
   if (!lastSets?.length) return null;
@@ -434,6 +619,44 @@ function hexPoints(cx, cy, r) {
   for (let i = 0; i < 6; i++) { const a = (Math.PI / 180) * (60 * i - 90); pts.push(`${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`); }
   return pts.join(" ");
 }
+/* Mini schéma anatomique : silhouette avec le(s) muscle(s) ciblé(s) surligné(s).
+   muscles = { muscleKey: poids }. La couleur reflète l'intensité du ciblage. */
+const MUSCLE_REGIONS = {
+  // coords approximatives sur une silhouette 44x60 (vue de face)
+  pecs:    [[22,18,"M15,16 h14 v6 q-7,4 -14,0 z"]],
+  epaules: [[22,15,"M11,15 a4,4 0 0,1 8,0 z"],[22,15,"M25,15 a4,4 0 0,1 8,0 z"]],
+  biceps:  [[12,22,"M10,19 q-3,4 0,8 q3,-1 3,-4 z"],[32,22,"M34,19 q3,4 0,8 q-3,-1 -3,-4 z"]],
+  triceps: [[11,23,"M9,20 q-2,4 0,7 z"],[33,23,"M35,20 q2,4 0,7 z"]],
+  dos:     [[22,20,"M15,16 h14 v10 h-14 z"]],
+  abdos:   [[22,30,"M17,25 h10 v12 h-10 z"]],
+  quads:   [[17,42,"M15,36 q-2,8 1,14 q3,-1 3,-3 z"],[27,42,"M29,36 q2,8 -1,14 q-3,-1 -3,-3 z"]],
+  ischios: [[17,44,"M15,38 q-2,8 1,13 z"],[27,44,"M29,38 q2,8 -1,13 z"]],
+  fessiers:[[22,34,"M16,31 q6,4 12,0 v4 q-6,4 -12,0 z"]],
+  mollets: [[17,53,"M16,49 q-2,5 0,8 z"],[27,53,"M28,49 q2,5 0,8 z"]],
+};
+function MuscleIcon({ muscles, size = 44, color = "#ff5c8a" }) {
+  const primary = Object.entries(muscles || {}).sort((a, b) => b[1] - a[1])[0]?.[0];
+  return (
+    <div style={{ width: size, height: size, borderRadius: 12, background: "#1c2230", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+      <svg viewBox="0 0 44 60" width={size * 0.62} height={size * 0.84}>
+        {/* silhouette */}
+        <g fill="#2f3645">
+          <circle cx="22" cy="8" r="5" />
+          <path d="M14,14 h16 v18 q0,3 -3,3 h-10 q-3,0 -3,-3 z" />
+          <path d="M14,15 l-5,2 q-2,1 -2,4 l1,8 h4 l1,-9 z" />
+          <path d="M30,15 l5,2 q2,1 2,4 l-1,8 h-4 l-1,-9 z" />
+          <path d="M16,35 h5 l-1,20 h-4 l-1,-15 z" />
+          <path d="M28,35 h-5 l1,20 h4 l1,-15 z" />
+        </g>
+        {/* muscle ciblé surligné */}
+        {primary && MUSCLE_REGIONS[primary]?.map((r, i) => (
+          <path key={i} d={r[2]} fill={color} opacity="0.9" />
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 function RankBadge({ score, size = 64 }) {
   const { tier, sub } = scoreToRank(score); const r = size / 2; const gid = `g-${tier.key}-${size}`;
   return (
@@ -508,12 +731,11 @@ export default function App() {
   const flash = (m) => { setToast(m); setTimeout(() => setToast(""), 2400); };
   const bw = Number(profile?.bodyweight) || 0;
 
-  // XP courant après décroissance
+  // XP dérivée de TOUT l'historique (rétroactif : les imports comptent)
+  const xpData = useMemo(() => computeXpFromHistory(history, bw), [history, bw]);
   const xpNow = useMemo(() => {
-    const now = Date.now(); const out = {};
-    MUSCLES.forEach((m) => { const r = xpRaw[m.key]; out[m.key] = r ? decayXp(r.xp, r.lastTs, now) : 0; });
-    return out;
-  }, [xpRaw]);
+    const out = {}; MUSCLES.forEach((m) => (out[m.key] = xpData[m.key]?.xp || 0)); return out;
+  }, [xpData]);
   const totalXp = useMemo(() => Object.values(xpNow).reduce((a, b) => a + b, 0), [xpNow]);
   const levelInfo = useMemo(() => levelFromXP(totalXp), [totalXp]);
 
@@ -544,17 +766,18 @@ export default function App() {
   });
   const setPR = (exKey, val) => setPrs((prev) => ({ ...prev, [exKey]: val }));
 
-  // ajoute de l'XP aux muscles travaillés dans une séance
+  // estime l'XP d'une séance (pour le message ; l'XP réelle est recalculée depuis l'historique)
   const grantXp = (sessionExercises) => {
-    const now = Date.now(); const gain = {};
+    const reg = regularityMultiplier(history);
+    const gain = {};
     sessionExercises.forEach((se) => {
       const ex = EX_BY_KEY[se.key]; if (!ex) return;
-      const doneSets = se.sets.filter((s) => (s.weight && s.reps) || s.secs).length || se.sets.length;
-      Object.entries(ex.muscles).forEach(([mk, w]) => { gain[mk] = (gain[mk] || 0) + doneSets * XP_PER_SET * w; });
+      se.sets.forEach((set) => {
+        const valid = set.secs || (set.weight && set.reps); if (!valid) return;
+        const mult = perfMultiplier(ex, set, bw) * reg;
+        Object.entries(ex.muscles).forEach(([mk, w]) => { gain[mk] = (gain[mk] || 0) + XP_PER_SET * w * mult; });
+      });
     });
-    setXpRaw((prev) => { const next = { ...prev };
-      Object.entries(gain).forEach(([mk, g]) => { const cur = next[mk] ? decayXp(next[mk].xp, next[mk].lastTs, now) : 0; next[mk] = { xp: cur + g, lastTs: now }; });
-      return next; });
     return gain;
   };
 
@@ -611,7 +834,7 @@ export default function App() {
       </header>
 
       <nav style={S.tabs}>
-        {[["apercu","Aperçu"],["muscles","Muscles"],["exos","Exercices"],["seances","Séances"],["cardio","Cardio"],["historique","Historique"],["nutrition","Nutrition"],["rangs","Rangs"],["donnees","Données"]].map(([k, label]) => (
+        {[["apercu","Aperçu"],["muscles","Muscles"],["exos","Exercices"],["stats","Stats"],["seances","Séances"],["cardio","Cardio"],["callisthenie","Callisthénie"],["historique","Historique"],["nutrition","Nutrition"],["rangs","Rangs"],["donnees","Données"]].map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)} style={{ ...S.tab, ...(tab === k ? S.tabActive : {}) }}>{label}</button>
         ))}
       </nav>
@@ -624,8 +847,10 @@ export default function App() {
           ? <RoutineEditor routine={editingRoutine} onSave={saveRoutine} onCancel={() => setEditingRoutine(null)} />
           : <Seances routines={routines} onNew={() => setEditingRoutine({ id: uid(), name: "", exercises: [] })} onEdit={setEditingRoutine} onDelete={deleteRoutine} onStart={(r) => setLiveSession(r)} onExport={(r) => exportRoutine(r, flash)} onAddPreset={addPreset} />)}
         {tab === "cardio" && <Cardio cardio={cardio} bw={bw} onAdd={addCardio} onClear={() => setCardio([])} />}
-        {tab === "historique" && <History history={history} bw={bw} profile={profile} routines={routines} lifts={lifts} prs={prs} onClear={() => setHistory([])} flash={flash} />}
+        {tab === "historique" && <History history={history} bw={bw} profile={profile} routines={routines} lifts={lifts} prs={prs} onClear={() => setHistory([])} onDeleteSession={(id) => setHistory((prev) => prev.filter((s) => s.id !== id))} onUpdateSession={(id, upd) => setHistory((prev) => prev.map((s) => s.id === id ? { ...s, ...upd } : s))} flash={flash} />}
         {tab === "nutrition" && <Nutrition profile={profile} setProfile={setProfile} />}
+        {tab === "callisthenie" && <Callisthenie />}
+        {tab === "stats" && <StatsTab history={history} cardio={cardio} bw={bw} />}
         {tab === "rangs" && <RanksTab muscleScores={muscleScores} bw={bw} />}
         {tab === "donnees" && <DataTab profile={profile} routines={routines} lifts={lifts} prs={prs} history={history} cardio={cardio} xp={xpRaw} onImportBackup={importBackup} onImportHevy={importHevy} onImportRoutine={importRoutine} flash={flash} />}
       </main>
@@ -854,6 +1079,180 @@ function Cardio({ cardio, bw, onAdd, onClear }) {
   );
 }
 
+/* -------------------------- CALLISTHÉNIE ----------------------------- */
+function Callisthenie() {
+  const [level, setLevel] = useState("Débutant");
+  const [openFig, setOpenFig] = useState(null);
+  const levels = ["Débutant", "Intermédiaire", "Avancé"];
+  const list = CALISTHENICS.filter((c) => c.level === level);
+  const lvlColor = { "Débutant": "#4ade80", "Intermédiaire": "#f4d03f", "Avancé": "#ff5c8a" };
+  return (
+    <div style={{ display: "grid", gap: 14 }}>
+      <section style={S.card}>
+        <div style={S.cardTitle}>Débloque des figures</div>
+        <div style={{ fontSize: 12.5, opacity: 0.6, marginTop: 4, lineHeight: 1.5 }}>Choisis ton niveau et suis les étapes pour débloquer chaque figure de callisthénie.</div>
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          {levels.map((l) => <button key={l} onClick={() => setLevel(l)} style={{ ...S.goalBtn, ...(level === l ? { ...S.goalBtnActive, background: lvlColor[l], borderColor: lvlColor[l], color: "#0d1015" } : {}) }}>{l}</button>)}
+        </div>
+      </section>
+      {list.map((c) => {
+        const isOpen = openFig === c.fig;
+        return (
+          <section key={c.fig} style={S.card}>
+            <div onClick={() => setOpenFig(isOpen ? null : c.fig)} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+              <div style={{ fontSize: 30 }}>{c.emoji}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>{c.fig}</div>
+                <div style={{ fontSize: 12, opacity: 0.55 }}>{c.muscle}</div>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: lvlColor[c.level], background: "#0e1218", padding: "3px 8px", borderRadius: 6 }}>{c.level}</span>
+              <span style={{ opacity: 0.4, fontSize: 20, transform: isOpen ? "rotate(90deg)" : "none", transition: ".2s" }}>›</span>
+            </div>
+            {isOpen && (
+              <div style={{ marginTop: 12, borderTop: "1px solid #232833", paddingTop: 12 }}>
+                <div style={{ ...S.suggBox, marginBottom: 12 }}>🎯 Objectif : {c.goal}</div>
+                <div style={S.miniLabel}>Progression (étapes)</div>
+                <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                  {c.steps.map((s, i) => (
+                    <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "#0e1218", borderRadius: 10, padding: "10px 12px" }}>
+                      <div style={{ width: 22, height: 22, borderRadius: 99, background: lvlColor[c.level], color: "#0d1015", fontWeight: 800, fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</div>
+                      <span style={{ fontSize: 13.5, lineHeight: 1.4 }}>{s}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ----------------------------- STATS --------------------------------- */
+const PERIODS = [
+  { key: "1m", label: "1 mois", days: 30 },
+  { key: "3m", label: "3 mois", days: 90 },
+  { key: "6m", label: "6 mois", days: 182 },
+  { key: "1y", label: "1 an", days: 365 },
+  { key: "all", label: "Tout", days: 99999 },
+];
+/* Grande courbe avec axes et grille, plusieurs points. */
+function BigChart({ points, color = "#e0245e", unit = "" }) {
+  if (!points || points.length < 1) return <div style={{ fontSize: 13, opacity: 0.45, padding: "24px 0", textAlign: "center" }}>Aucune donnée sur cette période.</div>;
+  if (points.length === 1) {
+    return <div style={{ fontSize: 13, opacity: 0.6, padding: "24px 0", textAlign: "center" }}>1 seul point : {Math.round(points[0].value)}{unit}. Il en faut 2+ pour une courbe.</div>;
+  }
+  const W = 320, H = 160, padL = 34, padB = 22, padT = 10, padR = 8;
+  const xs = points.map((p) => +new Date(p.date));
+  const ys = points.map((p) => p.value);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  let minY = Math.min(...ys), maxY = Math.max(...ys);
+  if (minY === maxY) { minY = minY * 0.9; maxY = maxY * 1.1 || 1; }
+  const sx = (x) => padL + ((x - minX) / (maxX - minX || 1)) * (W - padL - padR);
+  const sy = (y) => H - padB - ((y - minY) / (maxY - minY || 1)) * (H - padT - padB);
+  const d = points.map((p, i) => `${i ? "L" : "M"}${sx(+new Date(p.date)).toFixed(1)},${sy(p.value).toFixed(1)}`).join(" ");
+  const area = `${d} L${sx(maxX).toFixed(1)},${H - padB} L${sx(minX).toFixed(1)},${H - padB} Z`;
+  const gid = "bg" + color.replace("#", "");
+  const yticks = [minY, (minY + maxY) / 2, maxY];
+  const fmtDate = (t) => new Date(t).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
+      <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity="0.28" /><stop offset="100%" stopColor={color} stopOpacity="0" /></linearGradient></defs>
+      {yticks.map((y, i) => (<g key={i}><line x1={padL} y1={sy(y)} x2={W - padR} y2={sy(y)} stroke="#222831" strokeWidth="1" /><text x={4} y={sy(y) + 3} fontSize="8.5" fill="#8a92a0">{Math.round(y)}</text></g>))}
+      <path d={area} fill={`url(#${gid})`} />
+      <path d={d} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      {points.map((p, i) => <circle key={i} cx={sx(+new Date(p.date))} cy={sy(p.value)} r="2.5" fill={color} />)}
+      <text x={padL} y={H - 6} fontSize="8.5" fill="#8a92a0">{fmtDate(minX)}</text>
+      <text x={W - padR} y={H - 6} fontSize="8.5" fill="#8a92a0" textAnchor="end">{fmtDate(maxX)}</text>
+    </svg>
+  );
+}
+
+function StatsTab({ history, cardio, bw }) {
+  const [period, setPeriod] = useState("6m");
+  const [exKey, setExKey] = useState("__volume__");
+  const cutoff = Date.now() - (PERIODS.find((p) => p.key === period).days) * 864e5;
+
+  // liste des exos présents dans l'historique
+  const exosInHistory = useMemo(() => {
+    const set = new Set();
+    history.forEach((s) => s.exercises?.forEach((e) => set.add(e.key)));
+    return [...set].map((k) => ({ key: k, name: EX_BY_KEY[k]?.name || k })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [history]);
+
+  // points selon sélection
+  const data = useMemo(() => {
+    const inRange = history.filter((s) => +new Date(s.date) >= cutoff);
+    if (exKey === "__volume__") {
+      // volume total par séance
+      return inRange.map((s) => {
+        let v = 0; s.exercises?.forEach((e) => e.sets.forEach((st) => { v += (Number(st.weight) || 0) * (Number(st.reps) || 0); }));
+        return { date: s.date, value: v };
+      }).filter((p) => p.value > 0).sort((a, b) => +new Date(a.date) - +new Date(b.date));
+    }
+    if (exKey === "__cardio__") {
+      return cardio.filter((c) => +new Date(c.date) >= cutoff).map((c) => ({ date: c.date, value: c.kcal })).sort((a, b) => +new Date(a.date) - +new Date(b.date));
+    }
+    // 1RM estimé max par séance pour l'exo choisi
+    const ex = EX_BY_KEY[exKey];
+    const pts = [];
+    inRange.forEach((s) => {
+      const f = s.exercises?.find((e) => e.key === exKey); if (!f) return;
+      let best = 0; f.sets.forEach((st) => { const e = ex?.isTime ? Number(st.secs) || 0 : estimate1RM(st.weight, st.reps); if (e > best) best = e; });
+      if (best > 0) pts.push({ date: s.date, value: best });
+    });
+    return pts.sort((a, b) => +new Date(a.date) - +new Date(b.date));
+  }, [history, cardio, exKey, cutoff]);
+
+  // résumé chiffré
+  const summary = useMemo(() => {
+    if (data.length < 1) return null;
+    const first = data[0].value, last = data[data.length - 1].value;
+    const max = Math.max(...data.map((d) => d.value));
+    const diff = last - first;
+    const pct = first > 0 ? Math.round((diff / first) * 100) : 0;
+    return { first, last, max, diff, pct, n: data.length };
+  }, [data]);
+
+  const unit = exKey === "__volume__" ? " kg" : exKey === "__cardio__" ? " kcal" : EX_BY_KEY[exKey]?.isTime ? " s" : " kg";
+  const color = exKey === "__cardio__" ? "#5ce0e0" : exKey === "__volume__" ? "#ffb55c" : "#e0245e";
+
+  return (
+    <div style={{ display: "grid", gap: 14 }}>
+      <section style={S.card}>
+        <div style={S.cardTitle}>Que veux-tu suivre ?</div>
+        <select value={exKey} onChange={(e) => setExKey(e.target.value)} style={{ ...S.input, marginTop: 8, appearance: "auto" }}>
+          <option value="__volume__">📊 Volume total (toutes séances)</option>
+          <option value="__cardio__">🏃 Cardio (calories)</option>
+          <optgroup label="Par exercice">
+            {exosInHistory.map((e) => <option key={e.key} value={e.key}>{e.name}</option>)}
+          </optgroup>
+        </select>
+        <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
+          {PERIODS.map((p) => <button key={p.key} onClick={() => setPeriod(p.key)} style={{ ...S.periodBtn, ...(period === p.key ? S.periodBtnOn : {}) }}>{p.label}</button>)}
+        </div>
+      </section>
+
+      <section style={S.card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>{exKey === "__volume__" ? "Volume par séance" : exKey === "__cardio__" ? "Calories par sortie" : EX_BY_KEY[exKey]?.name}</div>
+          {summary && <div style={{ fontSize: 12, fontWeight: 700, color: summary.diff >= 0 ? "#4ade80" : "#ff6b6b" }}>{summary.diff >= 0 ? "▲" : "▼"} {summary.pct >= 0 ? "+" : ""}{summary.pct}%</div>}
+        </div>
+        <BigChart points={data} color={color} unit={unit} />
+        {summary && (
+          <div style={{ display: "flex", justifyContent: "space-around", textAlign: "center", marginTop: 12, paddingTop: 12, borderTop: "1px solid #232833" }}>
+            <div><div style={{ fontSize: 11, opacity: 0.5 }}>Début</div><div style={{ fontWeight: 800 }}>{Math.round(summary.first)}{unit}</div></div>
+            <div><div style={{ fontSize: 11, opacity: 0.5 }}>Actuel</div><div style={{ fontWeight: 800, color }}>{Math.round(summary.last)}{unit}</div></div>
+            <div><div style={{ fontSize: 11, opacity: 0.5 }}>Record</div><div style={{ fontWeight: 800 }}>{Math.round(summary.max)}{unit}</div></div>
+            <div><div style={{ fontSize: 11, opacity: 0.5 }}>Points</div><div style={{ fontWeight: 800 }}>{summary.n}</div></div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 /* ----------------------------- RANGS --------------------------------- */
 function RanksTab({ muscleScores, bw }) {
   const ordered = [...MUSCLES].sort((a, b) => muscleScores[b.key] - muscleScores[a.key]);
@@ -942,7 +1341,7 @@ function ExoByMuscle({ lifts, prs, bw, setBestLift, setPR, progressionFor, flash
                   return (
                     <div key={ex.key} style={S.exoInner}>
                       <div onClick={() => setOpenExo(isOpen ? null : ex.key)} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-                        <div style={S.exoIcon}>{ex.icon}</div>
+                        <MuscleIcon muscles={ex.muscles} size={44} />
                         <div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 14 }}>{ex.name}{ex.perHand ? <span style={{ fontSize: 11, opacity: 0.5, fontWeight: 500 }}> /main</span> : null}</div>
                           <div style={{ fontSize: 12, opacity: 0.55 }}>{rec?.best1RM ? (ex.isTime ? `Record : ${rec.best1RM}s` : `1RM estimé : ${rec.best1RM} kg`) : "Aucune donnée"}{prs[ex.key] ? ` · PR ${prs[ex.key]}kg` : ""}</div></div>
                         {rec?.best1RM ? <RankBadge score={score} size={36} /> : <span style={{ fontSize: 12, color: "#e0245e", fontWeight: 600 }}>+ Ajouter</span>}
@@ -950,6 +1349,11 @@ function ExoByMuscle({ lifts, prs, bw, setBestLift, setPR, progressionFor, flash
                       {isOpen && (
                         <div style={{ marginTop: 12, borderTop: "1px solid #232833", paddingTop: 12 }}>
                           <ExoForm ex={ex} bw={bw} onSave={(e, w, r) => { setBestLift(ex.key, e, w, r); flash("Performance enregistrée ✓"); }} />
+                          {(() => { const t = nextRankTarget(ex, rec?.best1RM, bw); if (!t) return null;
+                            return t.top
+                              ? <div style={{ ...S.suggBox, marginTop: 12, background: "#1f1c10", borderColor: "#5a4a1a", color: "#f4d03f" }}>🔥 Rang maximal atteint sur cet exercice — tu domines !</div>
+                              : <div style={{ ...S.suggBox, marginTop: 12 }}>🎯 Pour passer <b>{t.nextLabel}</b> : {t.isTime ? `tiens ${t.target1RM}s` : `atteins ~${t.target1RM} kg en 1RM`}{!t.isTime && rec?.best1RM ? ` (soit +${t.delta} kg)` : ""}.</div>;
+                          })()}
                           <PRInput ex={ex} value={prs[ex.key]} onSave={(v) => { setPR(ex.key, v); flash("PR enregistré ✓"); }} />
                           <div style={{ marginTop: 14 }}><div style={S.miniLabel}>Progression (1RM estimé)</div><div style={{ marginTop: 6 }}><ProgressChart points={progressionFor(ex.key)} /></div></div>
                           <div style={{ marginTop: 14 }}><div style={S.miniLabel}>Muscles ciblés</div>
@@ -1256,10 +1660,19 @@ function SessionLogger({ routine, lastSessionSets, prs, onFinish, onCancel }) {
 }
 
 /* --------------------------- HISTORIQUE ------------------------------- */
-function History({ history, bw, profile, routines, lifts, prs, onClear, flash }) {
+function History({ history, bw, profile, routines, lifts, prs, onClear, onDeleteSession, onUpdateSession, flash }) {
   const volumeOf = (s) => { let v = 0; s.exercises.forEach((ex) => ex.sets.forEach((st) => { v += (Number(st.weight) || 0) * (Number(st.reps) || 0); })); return Math.round(v); };
-  // comparaison avec la séance précédente du même nom
   const prevSameName = (s, idx) => history.slice(idx + 1).find((h) => h.name === s.name && h.routineId === s.routineId);
+  const [openId, setOpenId] = useState(null);
+  const [editing, setEditing] = useState(null); // session en cours d'édition (copie)
+
+  const startEdit = (s) => setEditing(JSON.parse(JSON.stringify(s)));
+  const editSet = (ei, si, field, val) => {
+    const v = val.replace(",", "."); if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
+    setEditing((p) => ({ ...p, exercises: p.exercises.map((ex, i) => i !== ei ? ex : { ...ex, sets: ex.sets.map((st, j) => j !== si ? st : { ...st, [field]: v }) }) }));
+  };
+  const delSet = (ei, si) => setEditing((p) => ({ ...p, exercises: p.exercises.map((ex, i) => i !== ei ? ex : { ...ex, sets: ex.sets.filter((_, j) => j !== si) }) }));
+  const saveEdit = () => { onUpdateSession(editing.id, { name: editing.name, exercises: editing.exercises }); setEditing(null); flash("Séance modifiée ✓"); };
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
@@ -1267,30 +1680,94 @@ function History({ history, bw, profile, routines, lifts, prs, onClear, flash })
         <div style={{ ...S.card, textAlign: "center", padding: 28, opacity: 0.6 }}>Aucune séance terminée. Démarre une séance depuis l'onglet « Séances », ou importe ton historique Hevy depuis « Données ».</div>
       ) : (
         <>
+          <div style={{ fontSize: 12, opacity: 0.5 }}>{history.length} séances enregistrées</div>
           {history.map((s, idx) => {
             const vol = volumeOf(s); const prev = prevSameName(s, idx); const prevVol = prev ? volumeOf(prev) : null;
             const diff = prevVol != null ? vol - prevVol : null;
+            const isOpen = openId === s.id;
             return (
               <div key={s.id} style={S.card}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div onClick={() => setOpenId(isOpen ? null : s.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", cursor: "pointer" }}>
                   <div><div style={{ fontWeight: 800, fontSize: 16 }}>{s.name || "Séance"}</div>
-                    <div style={{ fontSize: 12, opacity: 0.55 }}>{new Date(s.date).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}{s.durationSec ? ` · ${fmtTime(s.durationSec)}` : ""}{s.source === "hevy" ? " · Hevy" : ""}</div></div>
+                    <div style={{ fontSize: 12, opacity: 0.55 }}>{new Date(s.date).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}{s.durationSec ? ` · ${fmtTime(s.durationSec)}` : ""}{s.source === "hevy" ? " · Hevy" : ""}</div></div>
                   <div style={{ textAlign: "right" }}><div style={{ fontSize: 11, opacity: 0.4 }}>Volume</div>
                     <div style={{ fontWeight: 800, color: "#ff5c8a" }}>{vol} kg</div>
-                    {diff != null && <div style={{ fontSize: 11, fontWeight: 700, color: diff >= 0 ? "#4ade80" : "#ff6b6b" }}>{diff >= 0 ? "▲" : "▼"} {Math.abs(diff)} kg vs préc.</div>}</div>
+                    {diff != null && <div style={{ fontSize: 11, fontWeight: 700, color: diff >= 0 ? "#4ade80" : "#ff6b6b" }}>{diff >= 0 ? "▲" : "▼"} {Math.abs(diff)} kg</div>}</div>
                 </div>
-                <div style={{ display: "grid", gap: 4, marginTop: 10 }}>
-                  {s.exercises.map((ex) => {
-                    const meta = EX_BY_KEY[ex.key]; const done = ex.sets.filter((st) => (st.weight && st.reps) || st.secs).length;
-                    return <div key={ex.key} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                      <span style={{ opacity: 0.85 }}>{meta?.name || ex.key}</span><span style={{ opacity: 0.5 }}>{done} séries</span></div>;
-                  })}
-                </div>
+
+                {!isOpen && (
+                  <div style={{ display: "grid", gap: 4, marginTop: 10 }}>
+                    {s.exercises.map((ex) => { const meta = EX_BY_KEY[ex.key]; const done = ex.sets.filter((st) => (st.weight && st.reps) || st.secs).length;
+                      return <div key={ex.key} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}><span style={{ opacity: 0.85 }}>{meta?.name || ex.key}</span><span style={{ opacity: 0.5 }}>{done} séries</span></div>; })}
+                  </div>
+                )}
+
+                {isOpen && (
+                  <div style={{ marginTop: 12, borderTop: "1px solid #232833", paddingTop: 12 }}>
+                    {s.exercises.map((ex) => { const meta = EX_BY_KEY[ex.key];
+                      return (
+                        <div key={ex.key} style={{ marginBottom: 12 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}><MuscleIcon muscles={meta?.muscles || {}} size={28} /><span style={{ fontWeight: 700, fontSize: 13.5 }}>{meta?.name || ex.key}</span></div>
+                          <div style={{ display: "grid", gap: 3 }}>
+                            {ex.sets.map((st, i) => (
+                              <div key={i} style={{ display: "flex", gap: 10, fontSize: 13, opacity: 0.8, paddingLeft: 36 }}>
+                                <span style={{ width: 16, opacity: 0.5 }}>{i + 1}</span>
+                                {meta?.isTime ? <span>{st.secs}s</span> : <span>{st.weight || "—"} kg × {st.reps || "—"}{st.weight && st.reps ? ` · 1RM ${estimate1RM(st.weight, st.reps)}kg` : ""}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ); })}
+                    <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                      <button style={{ ...S.btnGhost, flex: 1 }} onClick={() => startEdit(s)}>✏️ Modifier</button>
+                      <button style={{ ...S.btnGhost, color: "#ff6b6b" }} onClick={() => { if (confirm("Supprimer cette séance ?")) onDeleteSession(s.id); }}>🗑 Supprimer</button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
-          <button style={{ ...S.btnGhost, color: "#ff6b6b" }} onClick={onClear}>Effacer tout l'historique</button>
+          <button style={{ ...S.btnGhost, color: "#ff6b6b" }} onClick={() => { if (confirm("Effacer TOUT l'historique ?")) onClear(); }}>Effacer tout l'historique</button>
         </>
+      )}
+
+      {/* Overlay d'édition */}
+      {editing && (
+        <div style={S.overlay}>
+          <div style={S.sheet}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ fontWeight: 800, fontSize: 18 }}>Modifier la séance</div>
+              <button style={S.btnGhost} onClick={() => setEditing(null)}>Annuler</button>
+            </div>
+            <input value={editing.name || ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="Nom de la séance" style={{ ...S.input, marginBottom: 12 }} />
+            <div style={{ display: "grid", gap: 12 }}>
+              {editing.exercises.map((ex, ei) => { const meta = EX_BY_KEY[ex.key];
+                return (
+                  <div key={ei} style={S.card}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}><MuscleIcon muscles={meta?.muscles || {}} size={28} /><span style={{ fontWeight: 700 }}>{meta?.name || ex.key}</span></div>
+                    <div style={{ display: "grid", gap: 6 }}>
+                      {ex.sets.map((st, si) => (
+                        <div key={si} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ width: 18, fontSize: 12, opacity: 0.5 }}>{si + 1}</span>
+                          {meta?.isTime ? (
+                            <input inputMode="decimal" placeholder="s" value={st.secs || ""} onChange={(e) => editSet(ei, si, "secs", e.target.value)} style={S.logInput} />
+                          ) : (
+                            <>
+                              <input inputMode="decimal" placeholder="kg" value={st.weight || ""} onChange={(e) => editSet(ei, si, "weight", e.target.value)} style={S.logInput} />
+                              <span style={{ opacity: 0.4 }}>×</span>
+                              <input inputMode="numeric" placeholder="reps" value={st.reps || ""} onChange={(e) => editSet(ei, si, "reps", e.target.value)} style={S.logInput} />
+                            </>
+                          )}
+                          <button style={{ ...S.btnGhost, color: "#ff6b6b", padding: "6px 10px" }} onClick={() => delSet(ei, si)}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ); })}
+            </div>
+            <button style={{ ...S.btnPrimary, width: "100%", padding: 14, marginTop: 16 }} onClick={saveEdit}>Enregistrer les modifications</button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1302,6 +1779,9 @@ function Nutrition({ profile, setProfile }) {
   const macros = computeMacros(bw, profile.goal);
   const meals = buildMeals(macros);
   const goalLabel = (GOALS[profile.goal] || GOALS.maintien).label;
+  const [planIdx, setPlanIdx] = useState(0);
+  const plans = NUTRITION_PLANS[profile.goal] || NUTRITION_PLANS.maintien;
+  const plan = plans[Math.min(planIdx, plans.length - 1)];
   const bars = [
     { label: "Protéines", g: macros.protein, kcal: macros.protein * 4, color: "#e0245e" },
     { label: "Glucides", g: macros.carbs, kcal: macros.carbs * 4, color: "#27a3a3" },
@@ -1312,7 +1792,7 @@ function Nutrition({ profile, setProfile }) {
     <div style={{ display: "grid", gap: 16 }}>
       <section style={S.card}><div style={S.miniLabel}>Mon objectif</div>
         <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-          {Object.entries(GOALS).map(([k, v]) => <button key={k} onClick={() => setProfile({ ...profile, goal: k })} style={{ ...S.goalBtn, ...(profile.goal === k ? S.goalBtnActive : {}) }}>{v.label}</button>)}
+          {Object.entries(GOALS).map(([k, v]) => <button key={k} onClick={() => { setProfile({ ...profile, goal: k }); setPlanIdx(0); }} style={{ ...S.goalBtn, ...(profile.goal === k ? S.goalBtnActive : {}) }}>{v.label}</button>)}
         </div></section>
       <section style={S.card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1325,15 +1805,24 @@ function Nutrition({ profile, setProfile }) {
         </div>
       </section>
       <section style={S.card}><div style={S.cardTitle}>Conseils {goalLabel.toLowerCase()}</div><ul style={S.tipList}>{MEAL_TIPS[profile.goal].map((t, i) => <li key={i} style={S.tipItem}>{t}</li>)}</ul></section>
-      <section style={S.card}><div style={S.cardTitle}>Répartition sur la journée (quantités)</div>
-        <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+
+      <section style={S.card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={S.cardTitle}>Routine alimentaire</div>
+          <div style={{ fontSize: 12, opacity: 0.5 }}>{planIdx + 1}/{plans.length}</div>
+        </div>
+        <div style={{ display: "flex", gap: 6, marginTop: 10, overflowX: "auto", paddingBottom: 4 }}>
+          {plans.map((p, i) => <button key={i} onClick={() => setPlanIdx(i)} style={{ ...S.periodBtn, flex: "none", whiteSpace: "nowrap", ...(planIdx === i ? S.periodBtnOn : {}) }}>{p.n}</button>)}
+        </div>
+        <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
           {meals.map((meal, i) => (
             <div key={i} style={{ background: "#0e1218", borderRadius: 10, padding: "11px 13px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ fontWeight: 700, color: "#ff8fb0", fontSize: 13.5 }}>{meal.t}</span>
                 <span style={{ fontSize: 12, opacity: 0.6 }}>{meal.kcal} kcal · P{meal.p} G{meal.c} L{meal.f}</span>
               </div>
-              <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>{meal.ex}</div>
+              <div style={{ fontSize: 13, opacity: 0.85, marginTop: 4, fontWeight: 600 }}>{plan.meals[i]}</div>
+              <div style={{ fontSize: 11.5, opacity: 0.5, marginTop: 2 }}>Repère quantités : {meal.ex}</div>
             </div>
           ))}
         </div>
@@ -1450,14 +1939,26 @@ function parseHevy(text) {
   })).filter((s) => s.exercises.length);
   return { sessions, unmatched: [...unmatched] };
 }
+const FR_MONTHS = { "janv": 0, "févr": 1, "fevr": 1, "mars": 2, "avr": 3, "mai": 4, "juin": 5, "juil": 6, "août": 7, "aout": 7, "sept": 8, "oct": 9, "nov": 10, "déc": 11, "dec": 11 };
 function parseHevyDate(str) {
   if (!str) return new Date().toISOString();
+  // format FR : "17 juin 2026, 16:56" ou "21 oct. 2024, 11:51"
+  const m = str.match(/(\d{1,2})\s+([a-zéèûôîà.]+)\.?\s+(\d{4})(?:,?\s+(\d{1,2}):(\d{2}))?/i);
+  if (m) {
+    const day = +m[1], mon = m[2].toLowerCase().replace(".", "").slice(0, 4);
+    const monIdx = FR_MONTHS[mon] ?? FR_MONTHS[mon.slice(0, 3)];
+    if (monIdx != null) {
+      const d = new Date(+m[3], monIdx, day, +(m[4] || 0), +(m[5] || 0));
+      if (!isNaN(d)) return d.toISOString();
+    }
+  }
   const d = new Date(str); if (!isNaN(d)) return d.toISOString();
-  // format "28 Mar 2025, 17:29"
   const d2 = new Date(str.replace(",", "")); return isNaN(d2) ? new Date().toISOString() : d2.toISOString();
 }
 /* ----------------------------- STYLES --------------------------------- */
 const S = {
+  periodBtn: { flex: 1, minWidth: 56, padding: "7px 8px", borderRadius: 8, border: "1px solid #2a313d", background: "#0e1218", color: "#8a92a0", fontWeight: 600, fontSize: 12.5, cursor: "pointer" },
+  periodBtnOn: { background: "#e0245e", color: "#fff", borderColor: "#e0245e" },
   levelPill: { display: "flex", alignItems: "center", gap: 6, background: "#161b22", padding: "6px 14px", borderRadius: 99, border: "1px solid #2a3140" },
   levelBadge: { width: 70, height: 70, borderRadius: 16, background: "#0e1218", border: "1px solid #2a3140", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   obLabel: { fontSize: 11, opacity: 0.55, display: "block", marginBottom: 5, marginTop: 2 },
