@@ -1223,7 +1223,7 @@ function matchExercise(hevyName) {
 const XP_PER_SET = 10;            // XP de base par série
 const XP_HALFLIFE_DAYS = 45;      // demi-vie de la part "fraîcheur" (lente)
 const XP_FLOOR_RATIO = 0.55;      // part d'XP qui ne décroît jamais (acquis durable)
-const LEVEL_BASE = 120;
+const LEVEL_BASE = 60;
 
 function xpForLevel(level) { return Math.round(LEVEL_BASE * Math.pow(level, 1.5)); }
 function levelFromXP(totalXp) {
@@ -1411,6 +1411,30 @@ function cardioStats(typeKey, distanceVal, minutes, bw) {
 }
 
 /* -------------------------- NUTRITION --------------------------------- */
+/* ============================ THÈMES ================================= */
+const THEMES = {
+  nuit:    { label: "Nuit (défaut)", bg: "#0d1015", card: "#141921", accent: "#e0245e", accentGlow: "#ff5c8a" },
+  abysse:  { label: "Abysse", bg: "#0a0f1a", card: "#111a2b", accent: "#2f7bff", accentGlow: "#7ea8ff" },
+  foret:   { label: "Forêt", bg: "#0b130f", card: "#121f17", accent: "#27a34a", accentGlow: "#5ce087" },
+  braise:  { label: "Braise", bg: "#140b0a", card: "#1f1310", accent: "#ff6a1a", accentGlow: "#ffb55c" },
+  amethyste: { label: "Améthyste", bg: "#100a18", card: "#1a1228", accent: "#8e44ec", accentGlow: "#c08bff" },
+  carbone: { label: "Carbone", bg: "#0e0e10", card: "#17181b", accent: "#9aa0a8", accentGlow: "#d6dce4" },
+  aurore:  { label: "Aurore", bg: "#0a1414", card: "#102020", accent: "#27a3a3", accentGlow: "#5ce0e0" },
+  clair:   { label: "Clair", bg: "#f2f4f8", card: "#ffffff", accent: "#e0245e", accentGlow: "#ff5c8a", light: true },
+};
+function applyTheme(key) {
+  const t = THEMES[key] || THEMES.nuit;
+  const root = document.documentElement.style;
+  root.setProperty("--bg", t.bg);
+  root.setProperty("--card", t.card);
+  root.setProperty("--accent", t.accent);
+  root.setProperty("--accent-glow", t.accentGlow);
+  root.setProperty("--text", t.light ? "#1a1f28" : "#e8ecf2");
+  root.setProperty("--card-border", t.light ? "#e2e6ee" : "#1f2530");
+  root.setProperty("--inner", t.light ? "#f6f8fb" : "#10151d");
+  try { document.body.style.background = t.bg; } catch {}
+}
+
 const GOALS = {
   seche: { label: "Sèche", kcalFactor: 28, protein: 2.2, fat: 0.8 },
   maintien: { label: "Maintien", kcalFactor: 33, protein: 1.8, fat: 1.0 },
@@ -1616,19 +1640,60 @@ function Avatar({ muscleScores, size = 230 }) {
 }
 
 function RankBadge({ score, size = 64 }) {
-  const { tier, sub } = scoreToRank(score); const r = size / 2; const gid = `g-${tier.key}-${size}`;
+  const { tier, sub, tierIdx } = scoreToRank(score);
+  const r = size / 2, c = r, gid = `g-${tier.key}-${size}`;
+  const lvl = tierIdx; // 0 (Fer) .. 8 (Mythique)
+  // rayons décoratifs autour (de plus en plus nombreux avec le rang)
+  const rays = lvl >= 3 ? 4 + lvl * 2 : 0;
+  const rayEls = [];
+  for (let i = 0; i < rays; i++) {
+    const a = (Math.PI * 2 * i) / rays - Math.PI / 2;
+    const r1 = r - 2, r2 = r + (lvl >= 7 ? 2.5 : 1.5);
+    rayEls.push(<line key={i} x1={c + r1 * Math.cos(a)} y1={c + r1 * Math.sin(a)} x2={c + r2 * Math.cos(a)} y2={c + r2 * Math.sin(a)} stroke={tier.glow} strokeWidth={size * 0.025} strokeLinecap="round" opacity="0.8" />);
+  }
+  // petites étoiles pour les très hauts rangs
+  const stars = lvl >= 6 ? (lvl - 5) : 0;
+  const starEls = [];
+  for (let i = 0; i < stars; i++) {
+    const sx = c + (i - (stars - 1) / 2) * size * 0.16;
+    const sy = c + r * 0.5;
+    starEls.push(<text key={i} x={sx} y={sy} fontSize={size * 0.14} fill="#fff" textAnchor="middle" opacity="0.95">★</text>);
+  }
   return (
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <defs><radialGradient id={gid} cx="50%" cy="35%" r="70%"><stop offset="0%" stopColor={tier.glow} /><stop offset="100%" stopColor={tier.color} /></radialGradient></defs>
-        <polygon points={hexPoints(r, r, r - 3)} fill={`url(#${gid})`} stroke="rgba(255,255,255,.25)" strokeWidth="1.5" />
-        <polygon points={hexPoints(r, r, r - 9)} fill="none" stroke="rgba(0,0,0,.25)" strokeWidth="1" />
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: "visible" }}>
+        <defs>
+          <radialGradient id={gid} cx="50%" cy="32%" r="72%"><stop offset="0%" stopColor={tier.glow} /><stop offset="70%" stopColor={tier.color} /><stop offset="100%" stopColor={tier.color} /></radialGradient>
+          {lvl >= 5 && <filter id={gid + "-glow"}><feGaussianBlur stdDeviation={size * 0.03} result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>}
+        </defs>
+        {/* halo lumineux pour hauts rangs */}
+        {lvl >= 5 && <polygon points={hexPoints(c, c, r + 1)} fill={tier.glow} opacity="0.18" filter={`url(#${gid}-glow)`} />}
+        {/* rayons */}
+        {rayEls}
+        {/* couronne extérieure crantée pour les rangs élevés (sinon hexagone simple) */}
+        {lvl >= 2
+          ? <polygon points={starPoints(c, c, r - 2, r - (lvl >= 6 ? 7 : 9), 6 + lvl)} fill={`url(#${gid})`} stroke="rgba(255,255,255,.3)" strokeWidth="1" filter={lvl >= 5 ? `url(#${gid}-glow)` : undefined} />
+          : <polygon points={hexPoints(c, c, r - 3)} fill={`url(#${gid})`} stroke="rgba(255,255,255,.22)" strokeWidth="1.5" />}
+        {/* anneau intérieur (plus marqué pour hauts rangs) */}
+        <polygon points={hexPoints(c, c, r - (lvl >= 4 ? 11 : 9))} fill="none" stroke="rgba(0,0,0,.28)" strokeWidth={lvl >= 4 ? 1.5 : 1} />
+        {lvl >= 4 && <polygon points={hexPoints(c, c, r - 8)} fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="0.7" />}
+        {starEls}
       </svg>
-      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, textShadow: "0 1px 3px rgba(0,0,0,.5)", fontSize: size * 0.34, lineHeight: 1 }}>
-        {tier.label[0]}<span style={{ fontSize: size * 0.18, fontWeight: 700, opacity: 0.95 }}>{sub}</span>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, textShadow: "0 1px 3px rgba(0,0,0,.55)", fontSize: size * (lvl >= 6 ? 0.3 : 0.34), lineHeight: 1, paddingBottom: stars ? size * 0.08 : 0 }}>
+        {tier.label[0]}<span style={{ fontSize: size * 0.17, fontWeight: 700, opacity: 0.95 }}>{sub}</span>
       </div>
     </div>
   );
+}
+/* points d'une étoile/couronne à n branches (alternance rayon ext/int) */
+function starPoints(cx, cy, rOut, rIn, n) {
+  let pts = [];
+  for (let i = 0; i < n * 2; i++) {
+    const rr = i % 2 === 0 ? rOut : rIn;
+    const a = (Math.PI * i) / n - Math.PI / 2;
+    pts.push(`${cx + rr * Math.cos(a)},${cy + rr * Math.sin(a)}`);
+  }
+  return pts.join(" ");
 }
 function ProgressBar({ value, color }) {
   return <div style={{ height: 8, background: "#1b1f27", borderRadius: 99, overflow: "hidden" }}>
@@ -1677,9 +1742,11 @@ export default function App() {
   const [xpRaw, setXpRaw] = useState(() => store.get(K.xp, {}));
   const [editingRoutine, setEditingRoutine] = useState(null);
   const [liveSession, setLiveSession] = useState(null);
+  const [celebration, setCelebration] = useState(null);
   const [toast, setToast] = useState("");
 
   useEffect(() => { if (profile) store.set(K.profile, profile); }, [profile]);
+  useEffect(() => { applyTheme(profile?.theme || "nuit"); }, [profile?.theme]);
   useEffect(() => store.set(K.onboarded, onboarded), [onboarded]);
   useEffect(() => store.set(K.lifts, lifts), [lifts]);
   useEffect(() => store.set(K.prs, prs), [prs]);
@@ -1756,16 +1823,32 @@ export default function App() {
   const addPreset = (preset) => { setRoutines((prev) => [...prev, { ...preset, id: uid(), preset: false, exercises: preset.exercises.map((e) => ({ ...e })) }]); flash("Séance ajoutée à tes séances ✓"); };
 
   const completeSession = (session) => {
+    // état AVANT
+    const beforeLevel = levelInfo.level;
+    const beforeRanks = {}; MUSCLES.forEach((m) => (beforeRanks[m.key] = scoreToRank(muscleScores[m.key]).tierIdx));
     const gain = grantXp(session.exercises);
-    setHistory((prev) => [{ ...session, id: uid(), date: new Date().toISOString() }, ...prev].slice(0, 300));
-    setLifts((prev) => { const next = { ...prev };
-      session.exercises.forEach((se) => { const ex = EX_BY_KEY[se.key]; if (!ex) return;
-        let best = 0; se.sets.forEach((set) => { const e = ex.isTime ? Number(set.secs) || 0 : estimate1RM(set.weight, set.reps); if (e > best) best = e; });
-        if (best > 0) { const rec = next[ex.key] || { history: [] }; next[ex.key] = { best1RM: Math.max(best, rec.best1RM || 0), history: rec.history || [] }; } });
-      return next; });
+
+    const newHistory = [{ ...session, id: uid(), date: new Date().toISOString() }, ...history].slice(0, 300);
+    setHistory(newHistory);
+    const newLifts = { ...lifts };
+    session.exercises.forEach((se) => { const ex = EX_BY_KEY[se.key]; if (!ex) return;
+      let best = 0; se.sets.forEach((set) => { const e = ex.isTime ? Number(set.secs) || 0 : estimate1RM(set.weight, set.reps); if (e > best) best = e; });
+      if (best > 0) { const rec = newLifts[ex.key] || { history: [] }; newLifts[ex.key] = { best1RM: Math.max(best, rec.best1RM || 0), history: rec.history || [] }; } });
+    setLifts(newLifts);
     setLiveSession(null);
+
+    // état APRÈS (recalculé sur les nouvelles données)
+    const afterXpData = computeXpFromHistory(newHistory, bw);
+    const afterTotalXp = Object.values(afterXpData).reduce((a, v) => a + (v.xp || 0), 0);
+    const afterLevel = levelFromXP(afterTotalXp).level;
+    const afterScores = {}; const accM = {}; MUSCLES.forEach((m) => (accM[m.key] = { sum: 0, w: 0 }));
+    EXERCISES.forEach((ex) => { const rec = newLifts[ex.key]; if (!rec?.best1RM) return; const s = perfToScore(ex, rec.best1RM, bw); Object.entries(ex.muscles).forEach(([mk, w]) => { accM[mk].sum += s * w; accM[mk].w += w; }); });
+    MUSCLES.forEach((m) => (afterScores[m.key] = accM[m.key].w > 0 ? accM[m.key].sum / accM[m.key].w : 0));
+    const rankUps = MUSCLES.filter((m) => scoreToRank(afterScores[m.key]).tierIdx > beforeRanks[m.key])
+      .map((m) => ({ muscle: m.label, tier: scoreToRank(afterScores[m.key]).tier, tierIdx: scoreToRank(afterScores[m.key]).tierIdx }));
+
     const xpTotal = Math.round(Object.values(gain).reduce((a, b) => a + b, 0));
-    flash(`Séance terminée · +${xpTotal} XP ✓`); setTab("profil"); setProfilSub("historique");
+    setCelebration({ xp: xpTotal, levelUp: afterLevel > beforeLevel ? afterLevel : null, rankUps });
   };
 
   const addCardio = (entry) => { setCardio((prev) => [{ ...entry, id: uid(), date: new Date().toISOString() }, ...prev].slice(0, 200)); flash(`Cardio enregistré · ${entry.kcal} kcal ✓`); };
@@ -1827,7 +1910,59 @@ export default function App() {
       </main>
 
       {liveSession && <SessionLogger routine={liveSession} lastSessionSets={lastSessionSets} prs={prs} onFinish={completeSession} onCancel={() => setLiveSession(null)} />}
+      {celebration && <Celebration data={celebration} onClose={() => { setCelebration(null); setTab("profil"); setProfilSub("historique"); }} />}
       <footer style={S.footer}>Données sur ton appareil. Pense à exporter une sauvegarde (onglet Données).</footer>
+    </div>
+  );
+}
+
+/* --------------------- CÉLÉBRATION (fin de séance) ------------------- */
+function Celebration({ data, onClose }) {
+  const [xpShown, setXpShown] = useState(0);
+  const [phase, setPhase] = useState(0); // 0 xp, 1 ranks, 2 level
+  useEffect(() => {
+    let raf; const start = performance.now(); const dur = 1100;
+    const tick = (t) => { const p = Math.min(1, (t - start) / dur); setXpShown(Math.round(data.xp * (1 - Math.pow(1 - p, 3)))); if (p < 1) raf = requestAnimationFrame(tick); else setTimeout(() => setPhase(1), 350); };
+    raf = requestAnimationFrame(tick); return () => cancelAnimationFrame(raf);
+  }, [data.xp]);
+  useEffect(() => { if (phase === 1 && (!data.rankUps || !data.rankUps.length)) setPhase(2); }, [phase, data.rankUps]);
+
+  const confetti = Array.from({ length: 28 }).map((_, i) => {
+    const colors = ["#e0245e", "#ffb55c", "#5ce0e0", "#c08bff", "#4ade80", "#f4d03f"];
+    const left = Math.random() * 100, delay = Math.random() * 0.5, dur = 1.8 + Math.random() * 1.2;
+    return <div key={i} style={{ position: "absolute", top: -20, left: `${left}%`, width: 8, height: 8, background: colors[i % colors.length], borderRadius: 2, animation: `confettiFall ${dur}s linear ${delay}s infinite` }} />;
+  });
+
+  return (
+    <div style={{ ...S.overlay, alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>{confetti}</div>
+      <div style={{ ...S.card, maxWidth: 360, width: "88%", textAlign: "center", padding: 28, animation: "popIn .4s cubic-bezier(.2,1.2,.4,1)", position: "relative", zIndex: 1 }}>
+        <div style={{ fontSize: 13, letterSpacing: 2, opacity: 0.5, textTransform: "uppercase", marginBottom: 4 }}>Séance terminée</div>
+        <div style={{ fontSize: 44, marginBottom: 6 }}>🔥</div>
+        <div style={{ fontSize: 16, opacity: 0.7 }}>Tu as gagné</div>
+        <div style={{ fontSize: 48, fontWeight: 900, color: "var(--accent-glow,#ff5c8a)", lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>+{xpShown} <span style={{ fontSize: 22 }}>XP</span></div>
+
+        {phase >= 1 && data.rankUps && data.rankUps.length > 0 && (
+          <div style={{ marginTop: 18, animation: "popIn .4s ease" }}>
+            <div style={{ fontSize: 12, letterSpacing: 1, opacity: 0.5, textTransform: "uppercase" }}>Rang supérieur !</div>
+            {data.rankUps.map((r, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 8 }}>
+                <RankBadge score={(r.tierIdx + 0.5) / 9} size={36} />
+                <span style={{ fontWeight: 700 }}>{r.muscle} → <span style={{ color: r.tier.glow }}>{r.tier.label}</span></span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {data.levelUp && (
+          <div style={{ marginTop: 18, animation: "popIn .5s ease", background: "var(--inner,#10151d)", borderRadius: 12, padding: "12px 16px" }}>
+            <div style={{ fontSize: 12, letterSpacing: 1, opacity: 0.5, textTransform: "uppercase" }}>Niveau supérieur</div>
+            <div style={{ fontSize: 30, fontWeight: 900, color: "#ffb55c" }}>Niveau {data.levelUp} ⬆</div>
+          </div>
+        )}
+
+        <button style={{ ...S.btnPrimary, width: "100%", padding: 14, marginTop: 22, fontSize: 15 }} onClick={onClose}>Continuer</button>
+      </div>
     </div>
   );
 }
@@ -2369,6 +2504,28 @@ function Settings({ profile, setProfile, dataTabProps, onResetOnboarding }) {
       </section>
 
       <section style={S.card}>
+        <div style={{ fontWeight: 700, marginBottom: 4 }}>🎨 Apparence</div>
+        <div style={{ fontSize: 12.5, opacity: 0.6, marginBottom: 12 }}>Choisis l'ambiance de couleur de l'application.</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {Object.entries(THEMES).map(([k, t]) => {
+            const active = (profile.theme || "nuit") === k;
+            return (
+              <button key={k} onClick={() => setProfile({ ...profile, theme: k })}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 10, cursor: "pointer",
+                  border: active ? `2px solid ${t.accent}` : "1px solid #2a313d", background: t.bg, color: t.light ? "#1a1f28" : "#e8ecf2" }}>
+                <span style={{ display: "flex", gap: 3 }}>
+                  <span style={{ width: 12, height: 12, borderRadius: 3, background: t.card, border: "1px solid rgba(128,128,128,.3)" }} />
+                  <span style={{ width: 12, height: 12, borderRadius: 3, background: t.accent }} />
+                </span>
+                <span style={{ fontSize: 12.5, fontWeight: 600 }}>{t.label}</span>
+                {active && <span style={{ marginLeft: "auto", color: t.accent, fontWeight: 800 }}>✓</span>}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section style={S.card}>
         <div style={{ fontWeight: 700, marginBottom: 8 }}>⚙️ Avancé</div>
         <button style={{ ...S.btnGhost, width: "100%" }} onClick={onResetOnboarding}>Refaire la configuration initiale</button>
       </section>
@@ -2693,8 +2850,11 @@ function Seances({ routines, history, onNew, onEdit, onDelete, onStart, onExport
         {showPresets && (
           <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
             {PRESET_ROUTINES.map((p) => (
-              <div key={p.id} style={S.exoInner}>
-                <div style={{ fontWeight: 700, fontSize: 14.5 }}>{p.name}</div>
+              <div key={p.id} style={{ ...S.exoInner, borderLeft: "3px solid #4f7bd6", background: "#0e1420" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 9.5, fontWeight: 800, color: "#7ea8ff", background: "#0d1424", border: "1px solid #2a3a55", padding: "2px 6px", borderRadius: 5 }}>PRÉCONSTRUITE</span>
+                </div>
+                <div style={{ fontWeight: 700, fontSize: 14.5, marginTop: 6 }}>{p.name}</div>
                 <div style={{ fontSize: 12, opacity: 0.55, marginTop: 2 }}>{p.desc}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>{p.exercises.map((e) => <span key={e.key} style={{ ...S.chip, fontSize: 11 }}>{EX_BY_KEY[e.key]?.name || e.key}</span>)}</div>
                 <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
@@ -2745,8 +2905,12 @@ function RoutineEditor({ routine, onSave, onCancel }) {
   const [name, setName] = useState(routine.name || "");
   const [exercises, setExercises] = useState(routine.exercises || []);
   const [picker, setPicker] = useState(false);
+  const [pSearch, setPSearch] = useState("");
+  const [pMuscle, setPMuscle] = useState(null);
   const toggle = (key) => setExercises((prev) => prev.some((e) => e.key === key) ? prev.filter((e) => e.key !== key) : [...prev, { key, sets: 3, targetReps: 8, rest: 90 }]);
   const isSel = (key) => exercises.some((e) => e.key === key);
+  const pq = pSearch.trim().toLowerCase();
+  const pickerResults = (pq || pMuscle) ? EXERCISES.filter((e) => (!pMuscle || e.primary === pMuscle) && (!pq || e.name.toLowerCase().includes(pq))).slice(0, 60) : null;
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <section style={S.card}><div style={S.miniLabel}>Nom de la séance</div>
@@ -2760,7 +2924,7 @@ function RoutineEditor({ routine, onSave, onCancel }) {
         {!picker && exercises.map((e) => { const ex = EX_BY_KEY[e.key];
           return (
             <div key={e.key} style={{ ...S.exoInner, marginTop: 8 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}><div style={S.exoIcon}>{ex.icon}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}><MuscleIcon muscles={ex.muscles} size={32} />
                 <div style={{ flex: 1, fontWeight: 700, fontSize: 14 }}>{ex.name}</div>
                 <button style={{ ...S.btnGhost, color: "#ff6b6b", padding: "4px 10px" }} onClick={() => toggle(e.key)}>×</button></div>
               <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
@@ -2771,21 +2935,38 @@ function RoutineEditor({ routine, onSave, onCancel }) {
             </div>
           ); })}
         {picker && (
-          <div style={{ marginTop: 10, display: "grid", gap: 12 }}>
-            {MUSCLES.map((m) => { const list = EXERCISES.filter((e) => e.primary === m.key); if (!list.length) return null;
-              return (
-                <div key={m.key}><div style={{ ...S.miniLabel, marginBottom: 6 }}>{m.label}</div>
-                  <div style={{ display: "grid", gap: 6 }}>
-                    {list.map((ex) => (
-                      <div key={ex.key} onClick={() => toggle(ex.key)} style={{ ...S.pickRow, ...(isSel(ex.key) ? S.pickRowOn : {}) }}>
-                        <div style={{ ...S.exoIcon, width: 32, height: 32, fontSize: 16 }}>{ex.icon}</div>
-                        <span style={{ flex: 1, fontWeight: 600, fontSize: 13.5 }}>{ex.name}</span>
-                        <span style={{ fontSize: 18, color: isSel(ex.key) ? "#e0245e" : "#3a3f4a", fontWeight: 800 }}>{isSel(ex.key) ? "✓" : "+"}</span>
-                      </div>
-                    ))}
-                  </div>
+          <div style={{ marginTop: 10 }}>
+            <input value={pSearch} onChange={(e) => setPSearch(e.target.value)} placeholder="🔍 Rechercher un exercice…" style={S.input} />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+              {MUSCLES.map((m) => <button key={m.key} onClick={() => setPMuscle(pMuscle === m.key ? null : m.key)} style={{ ...S.chip, cursor: "pointer", border: "1px solid", borderColor: pMuscle === m.key ? "#e0245e" : "#2a313d", background: pMuscle === m.key ? "#e0245e" : "#1c2230", color: pMuscle === m.key ? "#fff" : "#cdd4de" }}>{m.label}</button>)}
+            </div>
+            <div style={{ marginTop: 10, display: "grid", gap: 12 }}>
+              {pickerResults ? (
+                <div style={{ display: "grid", gap: 6 }}>
+                  {pickerResults.length === 0 ? <div style={{ opacity: 0.5, fontSize: 13, textAlign: "center", padding: 16 }}>Aucun exercice trouvé.</div> :
+                   pickerResults.map((ex) => (
+                    <div key={ex.key} onClick={() => toggle(ex.key)} style={{ ...S.pickRow, ...(isSel(ex.key) ? S.pickRowOn : {}) }}>
+                      <MuscleIcon muscles={ex.muscles} size={32} />
+                      <span style={{ flex: 1, fontWeight: 600, fontSize: 13.5 }}>{ex.name}</span>
+                      <span style={{ fontSize: 18, color: isSel(ex.key) ? "#e0245e" : "#3a3f4a", fontWeight: 800 }}>{isSel(ex.key) ? "✓" : "+"}</span>
+                    </div>
+                  ))}
                 </div>
-              ); })}
+              ) : MUSCLES.map((m) => { const list = EXERCISES.filter((e) => e.primary === m.key).slice(0, 10); if (!list.length) return null;
+                return (
+                  <div key={m.key}><div style={{ ...S.miniLabel, marginBottom: 6 }}>{m.label} <span style={{ opacity: 0.5, fontWeight: 400 }}>(cherche pour voir tout)</span></div>
+                    <div style={{ display: "grid", gap: 6 }}>
+                      {list.map((ex) => (
+                        <div key={ex.key} onClick={() => toggle(ex.key)} style={{ ...S.pickRow, ...(isSel(ex.key) ? S.pickRowOn : {}) }}>
+                          <MuscleIcon muscles={ex.muscles} size={32} />
+                          <span style={{ flex: 1, fontWeight: 600, fontSize: 13.5 }}>{ex.name}</span>
+                          <span style={{ fontSize: 18, color: isSel(ex.key) ? "#e0245e" : "#3a3f4a", fontWeight: 800 }}>{isSel(ex.key) ? "✓" : "+"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ); })}
+            </div>
           </div>
         )}
       </section>
@@ -3242,7 +3423,7 @@ const S = {
   levelPill: { display: "flex", alignItems: "center", gap: 6, background: "#161b22", padding: "6px 14px", borderRadius: 99, border: "1px solid #2a3140" },
   levelBadge: { width: 70, height: 70, borderRadius: 16, background: "#0e1218", border: "1px solid #2a3140", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   obLabel: { fontSize: 11, opacity: 0.55, display: "block", marginBottom: 5, marginTop: 2 },
-  app: { maxWidth: 560, margin: "0 auto", minHeight: "100vh", background: "#0d1015", color: "#e8ecf2", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", display: "flex", flexDirection: "column" },
+  app: { maxWidth: 560, margin: "0 auto", minHeight: "100vh", background: "var(--bg,#0d1015)", color: "var(--text,#e8ecf2)", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", display: "flex", flexDirection: "column" },
   header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 18px 14px", position: "sticky", top: 0, zIndex: 10, background: "linear-gradient(180deg, #0d1015 70%, rgba(13,16,21,0))" },
   logo: { fontSize: 24, fontWeight: 900, letterSpacing: 1 },
   tagline: { fontSize: 11, opacity: 0.4, letterSpacing: 1, textTransform: "uppercase" },
@@ -3250,15 +3431,15 @@ const S = {
   bwInput: { width: 48, background: "transparent", border: "none", color: "#fff", fontWeight: 700, fontSize: 15, textAlign: "right", outline: "none" },
   tabs: { display: "flex", gap: 4, padding: "0 12px 8px", overflowX: "auto" },
   tab: { flexShrink: 0, padding: "8px 14px", borderRadius: 99, border: "none", background: "transparent", color: "#8a92a0", fontSize: 13.5, fontWeight: 600, cursor: "pointer", transition: ".2s", whiteSpace: "nowrap" },
-  tabActive: { background: "#e0245e", color: "#fff" },
+  tabActive: { background: "var(--accent,#e0245e)", color: "#fff" },
   main: { flex: 1, padding: "8px 14px 24px" },
   footer: { padding: "16px 18px 28px", fontSize: 11, opacity: 0.35, lineHeight: 1.5, textAlign: "center" },
-  card: { background: "#141921", border: "1px solid #1f2530", borderRadius: 16, padding: 18 },
+  card: { background: "var(--card,#141921)", border: "1px solid var(--card-border,#1f2530)", borderRadius: 16, padding: 18 },
   heroCard: { background: "linear-gradient(135deg, #1a1f2b 0%, #141921 60%)", border: "1px solid #2a3140" },
   cardTitle: { fontWeight: 700, fontSize: 15, marginBottom: 4 },
   miniLabel: { fontSize: 11, letterSpacing: 1, opacity: 0.5, textTransform: "uppercase", fontWeight: 600 },
   muscleDot: { width: 10, height: 10, borderRadius: 99, background: "#e0245e", boxShadow: "0 0 8px #e0245e" },
-  exoInner: { background: "#10151d", border: "1px solid #1c222d", borderRadius: 12, padding: 12 },
+  exoInner: { background: "var(--inner,#10151d)", border: "1px solid var(--card-border,#1c222d)", borderRadius: 12, padding: 12 },
   exoIcon: { width: 44, height: 44, borderRadius: 12, background: "#1c2230", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#ff5c8a", flexShrink: 0 },
   chip: { background: "#1c2230", padding: "4px 10px", borderRadius: 99, fontSize: 12, color: "#cdd4de" },
   tipList: { margin: "8px 0 0", padding: 0, listStyle: "none", display: "grid", gap: 7 },
@@ -3269,7 +3450,7 @@ const S = {
   logPR: { borderColor: "#c9a227", background: "#1f1c10" },
   previewBox: { marginTop: 12, background: "#0e1218", borderRadius: 10, padding: "10px 12px", fontSize: 13.5 },
   suggBox: { background: "#10201a", border: "1px solid #1d3b2c", borderRadius: 8, padding: "8px 10px", fontSize: 12.5, color: "#8fe0b0" },
-  btnPrimary: { background: "#e0245e", color: "#fff", border: "none", borderRadius: 10, padding: "10px 18px", fontWeight: 700, fontSize: 14, cursor: "pointer", whiteSpace: "nowrap" },
+  btnPrimary: { background: "var(--accent,#e0245e)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 18px", fontWeight: 700, fontSize: 14, cursor: "pointer", whiteSpace: "nowrap" },
   btnGhost: { background: "#1c2230", color: "#cdd4de", border: "1px solid #2a313d", borderRadius: 10, padding: "10px 14px", fontWeight: 600, fontSize: 13.5, cursor: "pointer", whiteSpace: "nowrap" },
   stepBtn: { width: 30, height: 30, borderRadius: 8, border: "1px solid #2a313d", background: "#1c2230", color: "#fff", fontSize: 18, fontWeight: 700, cursor: "pointer", lineHeight: 1 },
   checkBtn: { width: 34, height: 34, borderRadius: 8, border: "1px solid #2a313d", background: "#1c2230", color: "#4a5160", fontSize: 16, fontWeight: 800, cursor: "pointer", flexShrink: 0 },
@@ -3287,6 +3468,8 @@ const S = {
 const KEYFRAMES = `
   @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
   @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  @keyframes popIn { from{opacity:0;transform:scale(.8)} to{opacity:1;transform:scale(1)} }
+  @keyframes confettiFall { 0%{transform:translateY(0) rotate(0deg);opacity:1} 100%{transform:translateY(105vh) rotate(540deg);opacity:.7} }
   @keyframes slideUp { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
   @keyframes slideDown { from{transform:translate(-50%,-16px);opacity:0} to{transform:translate(-50%,0);opacity:1} }
   ::-webkit-scrollbar { height:0; width:0; }
