@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { createClient } from "@supabase/supabase-js";
 
 /* =========================================================================
    APEX v3 — Liftoff-like physique tracker
@@ -1550,6 +1551,44 @@ const store = {
 };
 const K = { profile: "apex_profile", lifts: "apex_lifts", routines: "apex_routines", history: "apex_history", prs: "apex_prs", xp: "apex_xp", cardio: "apex_cardio", onboarded: "apex_onboarded" };
 
+/* --------------------- SUPABASE (optionnel) -------------------------- */
+/* L'app fonctionne sans compte. Si les clés sont présentes (variables
+   d'environnement Vite), la synchro entre appareils s'active. */
+let supabase = null;
+function getSupabase() {
+  if (supabase) return supabase;
+  try {
+    const url = import.meta.env?.VITE_SUPABASE_URL;
+    const key = import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env?.VITE_SUPABASE_ANON_KEY;
+    if (!url || !key || typeof createClient !== "function") return null;
+    supabase = createClient(url, key);
+    return supabase;
+  } catch { return null; }
+}
+const supabaseEnabled = () => !!getSupabase();
+
+// Rassemble toutes les données locales en un seul objet (pour push)
+function collectLocalData() {
+  return {
+    profile: store.get(K.profile, null), lifts: store.get(K.lifts, {}),
+    routines: store.get(K.routines, []), history: store.get(K.history, []),
+    prs: store.get(K.prs, {}), cardio: store.get(K.cardio, []),
+    measures: store.get("apex_measures", []), onboarded: store.get(K.onboarded, false),
+  };
+}
+async function pushToCloud(userId) {
+  const sb = getSupabase(); if (!sb || !userId) return { ok: false };
+  const payload = { user_id: userId, data: collectLocalData(), updated_at: new Date().toISOString() };
+  const { error } = await sb.from("apex_data").upsert(payload, { onConflict: "user_id" });
+  return { ok: !error, error };
+}
+async function pullFromCloud(userId) {
+  const sb = getSupabase(); if (!sb || !userId) return { ok: false };
+  const { data, error } = await sb.from("apex_data").select("data, updated_at").eq("user_id", userId).maybeSingle();
+  if (error) return { ok: false, error };
+  return { ok: true, data: data?.data || null, updatedAt: data?.updated_at || null };
+}
+
 /* ----------------------------- UI BITS -------------------------------- */
 function hexPoints(cx, cy, r) {
   let pts = [];
@@ -1785,6 +1824,54 @@ export default function App() {
   const [editingRoutine, setEditingRoutine] = useState(null);
   const [liveSession, setLiveSession] = useState(null);
   const [celebration, setCelebration] = useState(null);
+  const [session, setSession] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState(null);
+
+  // écoute l'état de connexion Supabase (si configuré)
+  useEffect(() => {
+    const sb = getSupabase(); if (!sb) return;
+    sb.auth.getSession().then(({ data }) => setSession(data?.session || null));
+    const { data: sub } = sb.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => sub?.subscription?.unsubscribe?.();
+  }, []);
+
+  // applique un blob de données venu du cloud dans l'app + localStorage
+  const applyCloudData = (d) => {
+    if (!d) return;
+    if (d.profile) { setProfile(d.profile); store.set(K.profile, d.profile); }
+    if (d.lifts) { setLifts(d.lifts); store.set(K.lifts, d.lifts); }
+    if (d.routines) { setRoutines(d.routines); store.set(K.routines, d.routines); }
+    if (d.history) { setHistory(d.history); store.set(K.history, d.history); }
+    if (d.prs) { setPrs(d.prs); store.set(K.prs, d.prs); }
+    if (d.cardio) { setCardio(d.cardio); store.set(K.cardio, d.cardio); }
+    if (d.measures) store.set("apex_measures", d.measures);
+    if (d.onboarded) { setOnboarded(true); store.set(K.onboarded, true); }
+  };
+
+  // à la connexion : récupère les données du cloud (ou pousse les locales si le cloud est vide)
+  useEffect(() => {
+    const userId = session?.user?.id; if (!userId) return;
+    let cancel = false;
+    (async () => {
+      setSyncing(true);
+      const res = await pullFromCloud(userId);
+      if (!cancel) {
+        if (res.ok && res.data) { applyCloudData(res.data); setLastSync("pull"); }
+        else { await pushToCloud(userId); setLastSync("push"); }
+      }
+      if (!cancel) setSyncing(false);
+    })();
+    return () => { cancel = true; };
+  }, [session?.user?.id]);
+
+  // sauvegarde dans le cloud (anti-rebond) à chaque changement de données, si connecté
+  const dataSig = JSON.stringify([profile, lifts, routines, history, prs, cardio]);
+  useEffect(() => {
+    const userId = session?.user?.id; if (!userId) return;
+    const t = setTimeout(async () => { setSyncing(true); await pushToCloud(userId); setSyncing(false); setLastSync("push"); }, 1500);
+    return () => clearTimeout(t);
+  }, [dataSig, session?.user?.id]);
   const [toast, setToast] = useState("");
 
   useEffect(() => { if (profile) store.set(K.profile, profile); }, [profile]);
@@ -1939,6 +2026,12 @@ export default function App() {
           overall={overall} muscleScores={muscleScores} loggedCount={loggedCount} history={history} cardio={cardio}
           levelInfo={levelInfo} totalXp={totalXp} xpNow={xpNow} bw={bw} profile={profile} setProfile={setProfile}
           lifts={lifts} prs={prs} flash={flash} onResetOnboarding={() => { setOnboarded(false); }}
+          account={{ session, syncing, lastSync, enabled: supabaseEnabled(),
+            signInEmail: async (email, pw) => { const sb = getSupabase(); if (!sb) return { error: { message: "Synchro non configurée." } }; return await sb.auth.signInWithPassword({ email, password: pw }); },
+            signUpEmail: async (email, pw) => { const sb = getSupabase(); if (!sb) return { error: { message: "Synchro non configurée." } }; return await sb.auth.signUp({ email, password: pw }); },
+            signInGoogle: async () => { const sb = getSupabase(); if (!sb) return; await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } }); },
+            signOut: async () => { const sb = getSupabase(); if (sb) await sb.auth.signOut(); setSession(null); },
+            syncNow: async () => { const uid = session?.user?.id; if (!uid) return; setSyncing(true); await pushToCloud(uid); setSyncing(false); setLastSync("push"); flash("Synchronisé ✓"); } }}
           dataTabProps={{ profile, routines, lifts, prs, history, cardio, xp: xpRaw, onImportBackup: importBackup, onImportHevy: importHevy, onImportRoutine: importRoutine, flash,
             onClearHistory: () => setHistory([]), onDeleteSession: (id) => setHistory((p) => p.filter((s) => s.id !== id)), onUpdateSession: (id, upd) => setHistory((p) => p.map((s) => s.id === id ? { ...s, ...upd } : s)) }} />}
         {tab === "exos" && <ExoByMuscle lifts={lifts} prs={prs} bw={bw} setBestLift={setBestLift} setPR={setPR} progressionFor={progressionFor} exoCount={exoCount} weightHistoryFor={weightHistoryFor} flash={flash} />}
@@ -2499,11 +2592,90 @@ function Measures({ profile, setProfile, flash }) {
   );
 }
 
+/* ------------------------ COMPTE & SYNCHRO --------------------------- */
+function AccountBox({ account }) {
+  const [mode, setMode] = useState("signin"); // signin | signup
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [msg, setMsg] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  if (!account || !account.enabled) {
+    return (
+      <section style={S.card}>
+        <div style={S.cardTitle}>☁️ Compte & synchronisation</div>
+        <div style={{ fontSize: 12.5, opacity: 0.6, marginTop: 6, lineHeight: 1.5 }}>
+          La synchronisation entre appareils n'est pas activée sur cette version. Tes données restent enregistrées sur cet appareil. (Configuration Supabase requise — voir le guide d'installation.)
+        </div>
+      </section>
+    );
+  }
+
+  const user = account.session?.user;
+  if (user) {
+    return (
+      <section style={S.card}>
+        <div style={S.cardTitle}>☁️ Compte connecté</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 99, background: "var(--accent,#e0245e)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18, color: "#fff" }}>{(user.email || "?")[0].toUpperCase()}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis" }}>{user.email || "Utilisateur"}</div>
+            <div style={{ fontSize: 11.5, opacity: 0.55 }}>{account.syncing ? "Synchronisation…" : "Données synchronisées ✓"}</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button style={{ ...S.btnGhost, flex: 1 }} onClick={account.syncNow} disabled={account.syncing}>↻ Synchroniser</button>
+          <button style={{ ...S.btnGhost, color: "#ff6b6b" }} onClick={account.signOut}>Déconnexion</button>
+        </div>
+      </section>
+    );
+  }
+
+  const submit = async () => {
+    setMsg(null); setBusy(true);
+    const fn = mode === "signin" ? account.signInEmail : account.signUpEmail;
+    const { error } = await fn(email.trim(), pw) || {};
+    setBusy(false);
+    if (error) setMsg({ type: "err", text: error.message });
+    else if (mode === "signup") setMsg({ type: "ok", text: "Compte créé ! Vérifie tes emails si une confirmation est demandée, puis connecte-toi." });
+  };
+
+  return (
+    <section style={S.card}>
+      <div style={S.cardTitle}>☁️ Compte & synchronisation</div>
+      <div style={{ fontSize: 12.5, opacity: 0.6, marginTop: 6, lineHeight: 1.5 }}>Connecte-toi pour retrouver tes données sur tous tes appareils. C'est optionnel — l'app marche sans.</div>
+
+      <button onClick={account.signInGoogle} style={{ ...S.btnGhost, width: "100%", marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 12 }}>
+        <span style={{ fontWeight: 800, color: "#fff" }}>G</span> Continuer avec Google
+      </button>
+
+      <div style={{ textAlign: "center", fontSize: 11, opacity: 0.4, margin: "12px 0" }}>— ou avec un email —</div>
+
+      <div style={{ display: "grid", gap: 8 }}>
+        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ton@email.com" inputMode="email" style={S.input} />
+        <input value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Mot de passe (6+ caractères)" type="password" style={S.input} />
+        <button style={{ ...S.btnPrimary, width: "100%", padding: 12, opacity: busy ? 0.6 : 1 }} disabled={busy} onClick={submit}>
+          {busy ? "…" : mode === "signin" ? "Se connecter" : "Créer mon compte"}
+        </button>
+      </div>
+
+      {msg && <div style={{ ...S.suggBox, marginTop: 10, background: msg.type === "err" ? "#2a1014" : "#10220f", borderColor: msg.type === "err" ? "#5a1a24" : "#1a5a2a", color: msg.type === "err" ? "#ff8fa0" : "#7ce0a0" }}>{msg.text}</div>}
+
+      <div style={{ textAlign: "center", marginTop: 10 }}>
+        <button onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setMsg(null); }} style={{ background: "none", border: "none", color: "var(--accent-glow,#ff5c8a)", fontSize: 12.5, cursor: "pointer", fontWeight: 600 }}>
+          {mode === "signin" ? "Pas de compte ? Créer un compte" : "Déjà un compte ? Se connecter"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 /* --------------------------- PARAMÈTRES ------------------------------ */
-function Settings({ profile, setProfile, dataTabProps, onResetOnboarding }) {
+function Settings({ profile, setProfile, dataTabProps, onResetOnboarding, account }) {
   const [section, setSection] = useState(null);
   return (
     <div style={{ display: "grid", gap: 12 }}>
+      <AccountBox account={account} />
       <section style={S.card}>
         <div style={S.cardTitle}>Mon profil</div>
         <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
@@ -2576,7 +2748,7 @@ function Settings({ profile, setProfile, dataTabProps, onResetOnboarding }) {
 }
 
 /* ----------------------------- PROFIL (hub) -------------------------- */
-function Profil({ sub, setSub, overall, muscleScores, loggedCount, history, cardio, levelInfo, totalXp, xpNow, bw, profile, setProfile, lifts, prs, dataTabProps, onResetOnboarding, flash }) {
+function Profil({ sub, setSub, overall, muscleScores, loggedCount, history, cardio, levelInfo, totalXp, xpNow, bw, profile, setProfile, lifts, prs, dataTabProps, onResetOnboarding, account, flash }) {
   const subs = [["apercu","Aperçu"],["rangs","Rangs"],["historique","Historique"],["stats","Stats"],["calendrier","Calendrier"],["mesures","Mesures"],["parametres","Paramètres"]];
   return (
     <div style={{ display: "grid", gap: 14 }}>
@@ -2620,7 +2792,7 @@ function Profil({ sub, setSub, overall, muscleScores, loggedCount, history, card
       {sub === "stats" && <StatsTab history={history} cardio={cardio} bw={bw} />}
       {sub === "calendrier" && <Calendar history={history} cardio={cardio} />}
       {sub === "mesures" && <Measures profile={profile} setProfile={setProfile} flash={flash} />}
-      {sub === "parametres" && <Settings profile={profile} setProfile={setProfile} dataTabProps={dataTabProps} onResetOnboarding={onResetOnboarding} />}
+      {sub === "parametres" && <Settings profile={profile} setProfile={setProfile} dataTabProps={dataTabProps} onResetOnboarding={onResetOnboarding} account={account} />}
     </div>
   );
 }
