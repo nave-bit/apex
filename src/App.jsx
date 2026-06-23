@@ -7,8 +7,8 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 let _supabaseClient = null;
 async function getSupabase() {
   if (_supabaseClient) return _supabaseClient;
-  const url = import.meta?.env?.VITE_SUPABASE_URL;
-  const key = import.meta?.env?.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return null;
   try {
     const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
