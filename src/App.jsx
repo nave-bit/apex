@@ -17,6 +17,41 @@ async function getSupabase() {
   } catch { return null; }
 }
 
+/* ----------------------- SYNCHRO CLOUD (apex_data) -------------------- */
+// Clés localStorage synchronisées (doit rester aligné avec K + apex_measures).
+const SYNC_KEYS = ["apex_profile","apex_lifts","apex_routines","apex_history","apex_prs","apex_xp","apex_cardio","apex_onboarded","apex_measures"];
+
+function readLocalBundle() {
+  const out = {};
+  for (const k of SYNC_KEYS) {
+    try { const v = window.localStorage.getItem(k); if (v != null) out[k] = JSON.parse(v); } catch {}
+  }
+  return out;
+}
+function writeLocalBundle(bundle) {
+  if (!bundle || typeof bundle !== "object") return false;
+  let changed = false;
+  for (const k of SYNC_KEYS) {
+    if (!(k in bundle)) continue;
+    const next = JSON.stringify(bundle[k]);
+    if (window.localStorage.getItem(k) !== next) { window.localStorage.setItem(k, next); changed = true; }
+  }
+  return changed;
+}
+
+const cloudSync = {
+  async pull(client, userId) {
+    const { data, error } = await client.from("apex_data").select("data").eq("user_id", userId).maybeSingle();
+    if (error) return { ok: false, error };
+    return { ok: true, data: data?.data ?? null };
+  },
+  async push(client, userId) {
+    const bundle = readLocalBundle();
+    const { error } = await client.from("apex_data").upsert({ user_id: userId, data: bundle, updated_at: new Date().toISOString() });
+    return { ok: !error, error };
+  },
+};
+
 /* =========================================================================
    APEX v3 — Liftoff-like physique tracker
    Profil 1er lancement • Rangs recalibrés (plus durs) • XP/Level + décroissance
@@ -1815,6 +1850,57 @@ export default function App() {
   useEffect(() => store.set(K.cardio, cardio), [cardio]);
   useEffect(() => store.set(K.xp, xpRaw), [xpRaw]);
 
+  /* --------- SYNCHRO CLOUD : tire à la connexion, pousse aux changements --------- */
+  const syncReady = useRef(false);
+  // À la connexion : on récupère les données cloud (ou on pousse le local la 1ère fois)
+  useEffect(() => {
+    if (!account?.id) { syncReady.current = false; return; }
+    let cancelled = false;
+    (async () => {
+      const client = await getSupabase();
+      if (!client || cancelled) return;
+      const res = await cloudSync.pull(client, account.id);
+      if (cancelled || !res.ok) { if (!res.ok) console.warn("APEX pull:", res.error?.message); return; }
+      if (res.data && Object.keys(res.data).length) {
+        // Données cloud existantes -> on écrase le local puis on rehydrate
+        const changed = writeLocalBundle(res.data);
+        if (changed && !sessionStorage.getItem("apex_synced_once")) {
+          sessionStorage.setItem("apex_synced_once", "1");
+          window.location.reload();
+          return;
+        }
+      } else {
+        // Aucune donnée cloud -> première synchro, on envoie le local
+        await cloudSync.push(client, account.id);
+      }
+      syncReady.current = true;
+    })();
+    return () => { cancelled = true; };
+  }, [account?.id]);
+
+  // Pousse (anti-rebond) à chaque modification quand l'utilisateur est connecté
+  useEffect(() => {
+    if (!account?.id || !syncReady.current) return;
+    const t = setTimeout(async () => {
+      const client = await getSupabase();
+      if (client) cloudSync.push(client, account.id);
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [account?.id, profile, lifts, prs, routines, history, cardio, xpRaw, onboarded]);
+
+  // Filet de sécurité : pousse aussi quand l'onglet passe en arrière-plan (capte les mesures)
+  useEffect(() => {
+    if (!account?.id) return;
+    const flush = async () => {
+      if (document.visibilityState === "hidden" && syncReady.current) {
+        const client = await getSupabase();
+        if (client) cloudSync.push(client, account.id);
+      }
+    };
+    document.addEventListener("visibilitychange", flush);
+    return () => document.removeEventListener("visibilitychange", flush);
+  }, [account?.id]);
+
   const flash = (m) => { setToast(m); setTimeout(() => setToast(""), 2400); };
   const bw = Number(profile?.bodyweight) || 0;
 
@@ -1956,7 +2042,7 @@ export default function App() {
         {tab === "profil" && <Profil sub={profilSub} setSub={setProfilSub}
           overall={overall} muscleScores={muscleScores} loggedCount={loggedCount} history={history} cardio={cardio}
           levelInfo={levelInfo} totalXp={totalXp} xpNow={xpNow} bw={bw} profile={profile} setProfile={setProfile}
-          lifts={lifts} prs={prs} flash={flash} account={account} onResetOnboarding={() => { setOnboarded(false); }}
+          lifts={lifts} prs={prs} flash={flash} account={account} setAccount={setAccount} onResetOnboarding={() => { setOnboarded(false); }}
           dataTabProps={{ profile, routines, lifts, prs, history, cardio, xp: xpRaw, onImportBackup: importBackup, onImportHevy: importHevy, onImportRoutine: importRoutine, flash,
             onClearHistory: () => setHistory([]), onDeleteSession: (id) => setHistory((p) => p.filter((s) => s.id !== id)), onUpdateSession: (id, upd) => setHistory((p) => p.map((s) => s.id === id ? { ...s, ...upd } : s)) }} />}
         {tab === "exos" && <ExoByMuscle lifts={lifts} prs={prs} bw={bw} setBestLift={setBestLift} setPR={setPR} progressionFor={progressionFor} exoCount={exoCount} weightHistoryFor={weightHistoryFor} flash={flash} />}
@@ -2611,11 +2697,11 @@ function AccountBox({ account, onAccountChange }) {
 }
 
 /* --------------------------- PARAMÈTRES ------------------------------ */
-function Settings({ profile, setProfile, dataTabProps, onResetOnboarding, account }) {
+function Settings({ profile, setProfile, dataTabProps, onResetOnboarding, account, setAccount }) {
   const [section, setSection] = useState(null);
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      <AccountBox account={account} />
+      <AccountBox account={account} onAccountChange={setAccount} />
       <section style={S.card}>
         <div style={S.cardTitle}>Mon profil</div>
         <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
@@ -2688,7 +2774,7 @@ function Settings({ profile, setProfile, dataTabProps, onResetOnboarding, accoun
 }
 
 /* ----------------------------- PROFIL (hub) -------------------------- */
-function Profil({ sub, setSub, overall, muscleScores, loggedCount, history, cardio, levelInfo, totalXp, xpNow, bw, profile, setProfile, lifts, prs, dataTabProps, onResetOnboarding, account, flash }) {
+function Profil({ sub, setSub, overall, muscleScores, loggedCount, history, cardio, levelInfo, totalXp, xpNow, bw, profile, setProfile, lifts, prs, dataTabProps, onResetOnboarding, account, setAccount, flash }) {
   const subs = [["apercu","Aperçu"],["rangs","Rangs"],["historique","Historique"],["stats","Stats"],["calendrier","Calendrier"],["mesures","Mesures"],["parametres","Paramètres"]];
   return (
     <div style={{ display: "grid", gap: 14 }}>
@@ -2732,7 +2818,7 @@ function Profil({ sub, setSub, overall, muscleScores, loggedCount, history, card
       {sub === "stats" && <StatsTab history={history} cardio={cardio} bw={bw} />}
       {sub === "calendrier" && <Calendar history={history} cardio={cardio} />}
       {sub === "mesures" && <Measures profile={profile} setProfile={setProfile} flash={flash} />}
-      {sub === "parametres" && <Settings profile={profile} setProfile={setProfile} dataTabProps={dataTabProps} onResetOnboarding={onResetOnboarding} account={account} />}
+      {sub === "parametres" && <Settings profile={profile} setProfile={setProfile} dataTabProps={dataTabProps} onResetOnboarding={onResetOnboarding} account={account} setAccount={setAccount} />}
     </div>
   );
 }
