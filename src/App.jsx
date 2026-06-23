@@ -1598,94 +1598,136 @@ function MuscleIcon({ muscles, size = 44, color = "#ff5c8a" }) {
    muscleScores = { muscleKey: score 0..1 }. */
 function Avatar({ muscleScores, size = 230 }) {
   const [back, setBack] = useState(false);
-  const col = (mk) => { const s = muscleScores[mk] || 0; return s > 0 ? scoreToRank(s).tier.glow : "#2a3038"; };
-  // chemins par muscle (silhouette stylisée 200x320)
+  const col = (mk) => { const s = muscleScores[mk] || 0; return s > 0 ? scoreToRank(s).tier.glow : "#262c36"; };
+  // Anatomie détaillée sur un canevas 200x340. Chaque muscle = plusieurs formes (gauche/droite, têtes).
   const FRONT = {
-    epaules: ["M58,92 q-14,-4 -20,8 l10,16 q10,-10 16,-8 z", "M142,92 q14,-4 20,8 l-10,16 q-10,-10 -16,-8 z"],
-    pecs: ["M72,96 q28,16 56,0 l-4,30 q-24,12 -48,0 z"],
-    abdos: ["M84,130 h32 v54 q-16,8 -32,0 z"],
-    biceps: ["M44,108 q-8,18 -4,36 l14,-4 q-2,-18 4,-30 z", "M156,108 q8,18 4,36 l-14,-4 q2,-18 -4,-30 z"],
-    quads: ["M80,196 q-6,40 2,72 l18,-4 q2,-36 -2,-66 z", "M120,196 q6,40 -2,72 l-18,-4 q-2,-36 2,-66 z"],
-    mollets: ["M82,272 q-4,24 2,40 l14,-2 q2,-22 -2,-38 z", "M118,272 q4,24 -2,40 l-14,-2 q-2,-22 2,-38 z"],
+    epaules: ["M62,86 q-16,-2 -22,12 q-2,8 2,14 q8,-12 22,-14 z", "M138,86 q16,-2 22,12 q2,8 -2,14 q-8,-12 -22,-14 z"],
+    pecs: ["M74,94 q14,10 25,9 v26 q-16,1 -27,-9 q-3,-14 2,-26 z", "M126,94 q-14,10 -25,9 v26 q16,1 27,-9 q3,-14 -2,-26 z"],
+    abdos: ["M88,134 h11 v11 h-11 z", "M101,134 h11 v11 h-11 z", "M88,147 h11 v11 h-11 z", "M101,147 h11 v11 h-11 z", "M88,160 h11 v12 h-11 z", "M101,160 h11 v12 h-11 z", "M86,128 q14,5 28,0 v4 q-14,5 -28,0 z"],
+    biceps: ["M52,112 q-7,14 -5,30 q6,2 11,-2 q-1,-15 4,-26 z", "M148,112 q7,14 5,30 q-6,2 -11,-2 q1,-15 -4,-26 z"],
+    quads: ["M80,202 q-8,30 -3,58 q8,3 14,-1 q1,-30 1,-56 z", "M120,202 q8,30 3,58 q-8,3 -14,-1 q-1,-30 -1,-56 z", "M96,204 v54 q4,2 8,0 v-54 z"],
+    mollets: ["M82,278 q-5,20 -1,38 q7,2 12,-1 q1,-18 -1,-36 z", "M118,278 q5,20 1,38 q-7,2 -12,-1 q-1,-18 1,-36 z"],
   };
   const BACK = {
-    epaules: ["M58,92 q-14,-4 -20,8 l10,16 q10,-10 16,-8 z", "M142,92 q14,-4 20,8 l-10,16 q-10,-10 -16,-8 z"],
-    dos: ["M72,96 q28,10 56,0 l-6,52 q-22,10 -44,0 z"],
-    triceps: ["M44,108 q-8,18 -4,36 l14,-4 q-2,-18 4,-30 z", "M156,108 q8,18 4,36 l-14,-4 q2,-18 -4,-30 z"],
-    fessiers: ["M80,158 q20,12 40,0 l-2,30 q-18,12 -36,0 z"],
-    ischios: ["M80,196 q-6,38 2,66 l18,-4 q2,-32 -2,-58 z", "M120,196 q6,38 -2,66 l-18,-4 q-2,-32 2,-58 z"],
-    mollets: ["M82,268 q-4,26 2,44 l14,-2 q2,-24 -2,-42 z", "M118,268 q4,26 -2,44 l-14,-2 q-2,-24 2,-42 z"],
+    epaules: ["M62,86 q-16,-2 -22,12 q-2,8 2,14 q8,-12 22,-14 z", "M138,86 q16,-2 22,12 q2,8 -2,14 q-8,-12 -22,-14 z", "M82,90 q18,-6 36,0 l-3,12 q-15,-5 -30,0 z"],
+    dos: ["M76,104 q12,8 24,7 v34 q-14,2 -24,-6 q-4,-18 0,-35 z", "M124,104 q-12,8 -24,7 v34 q14,2 24,-6 q4,-18 0,-35 z"],
+    triceps: ["M52,112 q-8,15 -5,30 q6,2 11,-2 q-1,-16 4,-26 z", "M148,112 q8,15 5,30 q-6,2 -11,-2 q1,-16 -4,-26 z"],
+    fessiers: ["M82,168 q9,8 18,7 v22 q-12,2 -20,-7 q-2,-12 2,-22 z", "M118,168 q-9,8 -18,7 v22 q12,2 20,-7 q2,-12 -2,-22 z"],
+    ischios: ["M80,202 q-7,28 -2,52 q8,3 13,-1 q1,-28 0,-50 z", "M120,202 q7,28 2,52 q-8,3 -13,-1 q-1,-28 0,-50 z"],
+    mollets: ["M82,276 q-5,22 -1,40 q7,2 12,-1 q1,-20 -1,-38 z", "M118,276 q5,22 1,40 q-7,2 -12,-1 q-1,-20 1,-38 z"],
   };
   const regions = back ? BACK : FRONT;
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-      <svg viewBox="0 0 200 320" width={size} height={size * 1.3} style={{ filter: "drop-shadow(0 4px 12px rgba(0,0,0,.4))" }}>
-        {/* corps de base */}
-        <g fill="#1d232e" stroke="#2a3038" strokeWidth="1">
-          <circle cx="100" cy="44" r="26" />
-          <path d="M64,78 q36,-14 72,0 l-6,90 q-30,12 -60,0 z" />
-          <path d="M64,80 l-22,8 q-8,4 -8,14 l8,46 q2,8 10,6 l16,-6 z" />
-          <path d="M136,80 l22,8 q8,4 8,14 l-8,46 q-2,8 -10,6 l-16,-6 z" />
-          <path d="M76,166 h20 l-4,108 q0,8 -8,8 h-6 q-6,0 -6,-8 z" />
-          <path d="M124,166 h-20 l4,108 q0,8 8,8 h6 q6,0 6,-8 z" />
+      <svg viewBox="0 0 200 340" width={size} height={size * 1.35} style={{ filter: "drop-shadow(0 4px 14px rgba(0,0,0,.45))" }}>
+        <defs>
+          <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#222a36" /><stop offset="100%" stopColor="#1a202a" /></linearGradient>
+        </defs>
+        {/* corps de base anatomique */}
+        <g fill="url(#bodyG)" stroke="#2e3644" strokeWidth="1.2">
+          {/* tête + cou */}
+          <circle cx="100" cy="40" r="22" />
+          <path d="M90,58 h20 v10 q-10,5 -20,0 z" />
+          {/* torse (trapèze épaules -> taille) */}
+          <path d="M66,80 q34,-12 68,0 l-8,92 q-26,10 -52,0 z" />
+          {/* bras gauche */}
+          <path d="M66,82 l-20,8 q-9,5 -9,16 l9,50 q2,8 10,5 l8,-4 l8,-30 z" />
+          {/* bras droit */}
+          <path d="M134,82 l20,8 q9,5 9,16 l-9,50 q-2,8 -10,5 l-8,-4 l-8,-30 z" />
+          {/* avant-bras G/D */}
+          <path d="M46,156 l-6,40 q-1,7 6,7 h6 q5,0 5,-7 l2,-38 z" />
+          <path d="M154,156 l6,40 q1,7 -6,7 h-6 q-5,0 -5,-7 l-2,-38 z" />
+          {/* hanches/bassin */}
+          <path d="M74,168 q26,10 52,0 l-2,24 q-24,10 -48,0 z" />
+          {/* jambe gauche */}
+          <path d="M76,190 q-2,60 0,86 l-2,42 q0,8 8,8 h6 q7,0 7,-8 l2,-128 z" />
+          {/* jambe droite */}
+          <path d="M124,190 q2,60 0,86 l2,42 q0,8 -8,8 h-6 q-7,0 -7,-8 l-2,-128 z" />
         </g>
-        {/* muscles colorés */}
+        {/* muscles colorés selon le rang */}
         {Object.entries(regions).map(([mk, paths]) => paths.map((d, i) => (
-          <path key={mk + i} d={d} fill={col(mk)} opacity="0.92" stroke="rgba(0,0,0,.2)" strokeWidth="0.5" />
+          <path key={mk + i} d={d} fill={col(mk)} opacity="0.95" stroke="rgba(0,0,0,.25)" strokeWidth="0.6" />
         )))}
+        {/* lignes de séparation pour le relief */}
+        <g stroke="rgba(0,0,0,.18)" strokeWidth="0.8" fill="none">
+          <line x1="100" y1="92" x2="100" y2="172" />
+        </g>
       </svg>
       <button onClick={() => setBack(!back)} style={{ ...S.btnGhost, fontSize: 13 }}>🔄 {back ? "Voir de face" : "Voir de dos"}</button>
     </div>
   );
 }
 
+/* Emblème de rang façon Apex Legends : menaçant et travaillé en haut,
+   épuré en bas. tierIdx 0..8 (Fer -> Mythique). */
 function RankBadge({ score, size = 64 }) {
   const { tier, sub, tierIdx } = scoreToRank(score);
-  const r = size / 2, c = r, gid = `g-${tier.key}-${size}`;
-  const lvl = tierIdx; // 0 (Fer) .. 8 (Mythique)
-  // rayons décoratifs autour (de plus en plus nombreux avec le rang)
-  const rays = lvl >= 3 ? 4 + lvl * 2 : 0;
-  const rayEls = [];
-  for (let i = 0; i < rays; i++) {
-    const a = (Math.PI * 2 * i) / rays - Math.PI / 2;
-    const r1 = r - 2, r2 = r + (lvl >= 7 ? 2.5 : 1.5);
-    rayEls.push(<line key={i} x1={c + r1 * Math.cos(a)} y1={c + r1 * Math.sin(a)} x2={c + r2 * Math.cos(a)} y2={c + r2 * Math.sin(a)} stroke={tier.glow} strokeWidth={size * 0.025} strokeLinecap="round" opacity="0.8" />);
+  const c = size / 2, r = size / 2;
+  const gid = `rb-${tier.key}-${size}`;
+  const lvl = tierIdx;
+  const sc = (n) => (n / 100) * size; // helper d'échelle sur base 100
+
+  // Couches décoratives selon le niveau
+  const spikes = []; // pointes/crocs agressifs (hauts rangs)
+  if (lvl >= 6) {
+    const n = 8 + (lvl - 6) * 2;
+    for (let i = 0; i < n; i++) {
+      const a = (Math.PI * 2 * i) / n - Math.PI / 2;
+      const r1 = r - sc(8), r2 = r + sc(lvl >= 8 ? 9 : 6);
+      const aw = 0.12;
+      spikes.push(`${c + r1 * Math.cos(a - aw)},${c + r1 * Math.sin(a - aw)} ${c + r2 * Math.cos(a)},${c + r2 * Math.sin(a)} ${c + r1 * Math.cos(a + aw)},${c + r1 * Math.sin(a + aw)}`);
+    }
   }
-  // petites étoiles pour les très hauts rangs
-  const stars = lvl >= 6 ? (lvl - 5) : 0;
-  const starEls = [];
-  for (let i = 0; i < stars; i++) {
-    const sx = c + (i - (stars - 1) / 2) * size * 0.16;
-    const sy = c + r * 0.5;
-    starEls.push(<text key={i} x={sx} y={sy} fontSize={size * 0.14} fill="#fff" textAnchor="middle" opacity="0.95">★</text>);
+  const rays = [];
+  if (lvl >= 3 && lvl < 6) {
+    const n = 6 + lvl;
+    for (let i = 0; i < n; i++) { const a = (Math.PI * 2 * i) / n - Math.PI / 2; const r1 = r - sc(6), r2 = r + sc(4);
+      rays.push(<line key={i} x1={c + r1 * Math.cos(a)} y1={c + r1 * Math.sin(a)} x2={c + r2 * Math.cos(a)} y2={c + r2 * Math.sin(a)} stroke={tier.glow} strokeWidth={sc(2)} strokeLinecap="round" opacity="0.85" />); }
   }
+
+  // forme centrale : hexagone (bas), bouclier cranté (milieu), emblème prédateur anguleux (haut)
+  let core;
+  if (lvl <= 1) {
+    core = <polygon points={hexPoints(c, c, r - sc(6))} fill={`url(#${gid})`} stroke="rgba(255,255,255,.2)" strokeWidth={sc(1.5)} />;
+  } else if (lvl <= 4) {
+    core = <polygon points={starPoints(c, c, r - sc(5), r - sc(13), 6 + lvl)} fill={`url(#${gid})`} stroke="rgba(255,255,255,.28)" strokeWidth={sc(1.2)} />;
+  } else {
+    // emblème anguleux type "predator" : losange acéré + ailerons intégrés + pointe
+    const top = c - r + sc(4), bot = c + r - sc(4), w = r - sc(6);
+    core = (
+      <g stroke="rgba(255,255,255,.4)" strokeWidth={sc(1)} strokeLinejoin="round">
+        {/* ailerons latéraux qui prolongent le losange (menaçant) */}
+        <polygon points={`${c - w},${c} ${c - w - sc(7)},${c - sc(12)} ${c - w + sc(3)},${c - sc(2)} ${c - w - sc(4)},${c + sc(11)} ${c - w + sc(4)},${c + sc(3)}`} fill={tier.color} stroke="none" />
+        <polygon points={`${c + w},${c} ${c + w + sc(7)},${c - sc(12)} ${c + w - sc(3)},${c - sc(2)} ${c + w + sc(4)},${c + sc(11)} ${c + w - sc(4)},${c + sc(3)}`} fill={tier.color} stroke="none" />
+        {/* corps losange acéré (pointe haute allongée) */}
+        <polygon points={`${c},${top} ${c + w},${c - sc(3)} ${c + sc(6)},${bot} ${c - sc(6)},${bot} ${c - w},${c - sc(3)}`} fill={`url(#${gid})`} />
+        {/* facette intérieure sombre pour le relief */}
+        <polygon points={`${c},${top + sc(7)} ${c + w - sc(6)},${c - sc(3)} ${c},${c + sc(10)} ${c - w + sc(6)},${c - sc(3)}`} fill="rgba(0,0,0,.22)" stroke="none" />
+        {/* arête centrale brillante */}
+        <line x1={c} y1={top + sc(2)} x2={c} y2={bot - sc(2)} stroke={tier.glow} strokeWidth={sc(1.2)} opacity="0.7" />
+      </g>
+    );
+  }
+
   return (
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: "visible" }}>
         <defs>
-          <radialGradient id={gid} cx="50%" cy="32%" r="72%"><stop offset="0%" stopColor={tier.glow} /><stop offset="70%" stopColor={tier.color} /><stop offset="100%" stopColor={tier.color} /></radialGradient>
-          {lvl >= 5 && <filter id={gid + "-glow"}><feGaussianBlur stdDeviation={size * 0.03} result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>}
+          <radialGradient id={gid} cx="50%" cy="30%" r="75%"><stop offset="0%" stopColor={tier.glow} /><stop offset="65%" stopColor={tier.color} /><stop offset="100%" stopColor={tier.color} /></radialGradient>
+          {lvl >= 5 && <filter id={gid + "-g"} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation={sc(3)} result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>}
         </defs>
-        {/* halo lumineux pour hauts rangs */}
-        {lvl >= 5 && <polygon points={hexPoints(c, c, r + 1)} fill={tier.glow} opacity="0.18" filter={`url(#${gid}-glow)`} />}
-        {/* rayons */}
-        {rayEls}
-        {/* couronne extérieure crantée pour les rangs élevés (sinon hexagone simple) */}
-        {lvl >= 2
-          ? <polygon points={starPoints(c, c, r - 2, r - (lvl >= 6 ? 7 : 9), 6 + lvl)} fill={`url(#${gid})`} stroke="rgba(255,255,255,.3)" strokeWidth="1" filter={lvl >= 5 ? `url(#${gid}-glow)` : undefined} />
-          : <polygon points={hexPoints(c, c, r - 3)} fill={`url(#${gid})`} stroke="rgba(255,255,255,.22)" strokeWidth="1.5" />}
-        {/* anneau intérieur (plus marqué pour hauts rangs) */}
-        <polygon points={hexPoints(c, c, r - (lvl >= 4 ? 11 : 9))} fill="none" stroke="rgba(0,0,0,.28)" strokeWidth={lvl >= 4 ? 1.5 : 1} />
-        {lvl >= 4 && <polygon points={hexPoints(c, c, r - 8)} fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="0.7" />}
-        {starEls}
+        {lvl >= 5 && <circle cx={c} cy={c} r={r - sc(2)} fill={tier.glow} opacity="0.16" filter={`url(#${gid}-g)`} />}
+        {spikes.length > 0 && <g filter={lvl >= 5 ? `url(#${gid}-g)` : undefined}>{spikes.map((p, i) => <polygon key={i} points={p} fill={tier.glow} opacity="0.9" />)}</g>}
+        {rays}
+        <g filter={lvl >= 7 ? `url(#${gid}-g)` : undefined}>{core}</g>
+        {lvl >= 3 && lvl < 5 && <polygon points={hexPoints(c, c, r - sc(14))} fill="none" stroke="rgba(255,255,255,.3)" strokeWidth={sc(0.8)} />}
       </svg>
-      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, textShadow: "0 1px 3px rgba(0,0,0,.55)", fontSize: size * (lvl >= 6 ? 0.3 : 0.34), lineHeight: 1, paddingBottom: stars ? size * 0.08 : 0 }}>
-        {tier.label[0]}<span style={{ fontSize: size * 0.17, fontWeight: 700, opacity: 0.95 }}>{sub}</span>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, textShadow: "0 1px 4px rgba(0,0,0,.6)", fontSize: size * (lvl >= 5 ? 0.28 : 0.34), lineHeight: 1 }}>
+        {tier.label[0]}<span style={{ fontSize: size * 0.16, fontWeight: 700, opacity: 0.95 }}>{sub}</span>
       </div>
     </div>
   );
 }
-/* points d'une étoile/couronne à n branches (alternance rayon ext/int) */
 function starPoints(cx, cy, rOut, rIn, n) {
   let pts = [];
   for (let i = 0; i < n * 2; i++) {
@@ -3252,8 +3294,8 @@ function Nutrition({ profile, setProfile }) {
           <div style={S.cardTitle}>Routine alimentaire</div>
           <div style={{ fontSize: 12, opacity: 0.5 }}>{planIdx + 1}/{plans.length}</div>
         </div>
-        <div style={{ display: "flex", gap: 6, marginTop: 10, overflowX: "auto", paddingBottom: 4 }}>
-          {plans.map((p, i) => <button key={i} onClick={() => setPlanIdx(i)} style={{ ...S.periodBtn, flex: "none", whiteSpace: "nowrap", ...(planIdx === i ? S.periodBtnOn : {}) }}>{p.n}</button>)}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+          {plans.map((p, i) => <button key={i} onClick={() => setPlanIdx(i)} style={{ ...S.periodBtn, flex: "0 1 auto", minWidth: 0, whiteSpace: "normal", lineHeight: 1.2, ...(planIdx === i ? S.periodBtnOn : {}) }}>{p.n}</button>)}
         </div>
         <div style={{ fontSize: 11, opacity: 0.45, marginTop: 8 }}>Touche un repas pour voir le détail des macros.</div>
         <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
