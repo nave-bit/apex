@@ -1492,7 +1492,17 @@ const THEMES = {
   amethyste: { label: "Améthyste", bg: "#100a18", card: "#1a1228", accent: "#8e44ec", accentGlow: "#c08bff" },
   carbone: { label: "Carbone", bg: "#0e0e10", card: "#17181b", accent: "#9aa0a8", accentGlow: "#d6dce4" },
   aurore:  { label: "Aurore", bg: "#0a1414", card: "#102020", accent: "#27a3a3", accentGlow: "#5ce0e0" },
-  clair:   { label: "Clair", bg: "#f2f4f8", card: "#ffffff", accent: "#e0245e", accentGlow: "#ff5c8a", light: true },
+  // --- Ambiances ---
+  competition: { label: "🔥 Compétition", bg: "#120406", card: "#220a0e", accent: "#ff1f3d", accentGlow: "#ff6173", grad: "radial-gradient(1200px 600px at 50% -10%, #3a0a14 0%, #120406 60%)" },
+  focus:    { label: "🎯 Focus", bg: "#0d1117", card: "#151b24", accent: "#3d7dd6", accentGlow: "#8fb8e8", grad: "linear-gradient(180deg, #0f141c 0%, #0a0d12 100%)" },
+  neon:     { label: "⚡ Néon", bg: "#0a0613", card: "#160d26", accent: "#d61fff", accentGlow: "#ff5ef0", grad: "radial-gradient(900px 500px at 80% 0%, #2a0f44 0%, #0a0613 55%)" },
+  ocean:    { label: "🌊 Océan", bg: "#06121a", card: "#0d2230", accent: "#15b8c7", accentGlow: "#5ce0e8", grad: "linear-gradient(180deg, #0a2230 0%, #06121a 100%)" },
+  crepuscule: { label: "🌆 Crépuscule", bg: "#160a16", card: "#241023", accent: "#ff5e7e", accentGlow: "#ffb37a", grad: "linear-gradient(180deg, #2a1030 0%, #160a16 70%)" },
+  or:       { label: "🏆 Or & Noir", bg: "#0e0c06", card: "#1c1810", accent: "#e8b13a", accentGlow: "#ffd778", grad: "radial-gradient(1000px 500px at 50% -10%, #2a2210 0%, #0e0c06 60%)" },
+  // --- Clairs / chaleureux ---
+  clair:   { label: "☀️ Clair", bg: "#f2f4f8", card: "#ffffff", accent: "#e0245e", accentGlow: "#ff5c8a", light: true },
+  chaleureux: { label: "🤎 Chaleureux", bg: "#f4ece1", card: "#fffaf2", accent: "#c2691f", accentGlow: "#e8954a", light: true, grad: "linear-gradient(180deg, #f8f0e4 0%, #efe3d2 100%)" },
+  menthe:  { label: "🌿 Menthe claire", bg: "#eef6f0", card: "#ffffff", accent: "#1f9e6a", accentGlow: "#46c994", light: true },
 };
 function applyTheme(key) {
   const t = THEMES[key] || THEMES.nuit;
@@ -1504,7 +1514,7 @@ function applyTheme(key) {
   root.setProperty("--text", t.light ? "#1a1f28" : "#e8ecf2");
   root.setProperty("--card-border", t.light ? "#e2e6ee" : "#1f2530");
   root.setProperty("--inner", t.light ? "#f6f8fb" : "#10151d");
-  try { document.body.style.background = t.bg; } catch {}
+  try { document.body.style.background = t.grad || t.bg; } catch {}
 }
 
 const GOALS = {
@@ -2810,6 +2820,112 @@ function Settings({ profile, setProfile, dataTabProps, onResetOnboarding, accoun
 }
 
 /* ----------------------------- PROFIL (hub) -------------------------- */
+/* Streak hebdomadaire : nombre de semaines consécutives (jusqu'à cette semaine
+   ou la précédente) avec au moins une séance. + stats utiles. */
+function weekKey(d) {
+  const dt = new Date(d); dt.setHours(0, 0, 0, 0);
+  // jeudi de la semaine ISO
+  dt.setDate(dt.getDate() + 3 - ((dt.getDay() + 6) % 7));
+  const week1 = new Date(dt.getFullYear(), 0, 4);
+  const wn = 1 + Math.round(((dt - week1) / 864e5 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+  return `${dt.getFullYear()}-${wn}`;
+}
+function computeStreak(history) {
+  if (!history?.length) return { current: 0, best: 0, weekCount: 0, total: 0 };
+  const weeks = new Set(history.map((s) => weekKey(s.date)));
+  // semaines consécutives en remontant depuis cette semaine
+  const now = new Date();
+  let cur = 0; let cursor = new Date(now);
+  // tolère que la semaine en cours n'ait pas encore de séance : on démarre à la dernière semaine active
+  const thisWk = weekKey(now);
+  if (!weeks.has(thisWk)) cursor.setDate(cursor.getDate() - 7);
+  while (weeks.has(weekKey(cursor))) { cur++; cursor.setDate(cursor.getDate() - 7); }
+  // meilleur streak historique
+  const sortedWks = [...weeks].map((k) => k).sort();
+  let best = 0, run = 0, prev = null;
+  // reconstruit les dates de semaine pour comparer la continuité
+  const weekDates = history.map((s) => { const d = new Date(s.date); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); d.setHours(0,0,0,0); return +d; });
+  const uniq = [...new Set(weekDates)].sort((a, b) => a - b);
+  uniq.forEach((t) => { if (prev != null && t - prev === 7 * 864e5) run++; else run = 1; prev = t; if (run > best) best = run; });
+  // séances des 7 derniers jours
+  const weekCount = history.filter((s) => Date.now() - +new Date(s.date) < 7 * 864e5).length;
+  return { current: cur, best: Math.max(best, cur), weekCount, total: history.length };
+}
+
+const BADGES = [
+  { id: "first", emoji: "🌱", label: "Première séance", desc: "Termine 1 séance", test: (c) => c.total >= 1 },
+  { id: "s10", emoji: "💪", label: "Habitué", desc: "10 séances", test: (c) => c.total >= 10 },
+  { id: "s50", emoji: "🏋️", label: "Assidu", desc: "50 séances", test: (c) => c.total >= 50 },
+  { id: "s100", emoji: "🦾", label: "Machine", desc: "100 séances", test: (c) => c.total >= 100 },
+  { id: "streak4", emoji: "🔥", label: "En feu", desc: "4 semaines d'affilée", test: (c) => c.best >= 4 },
+  { id: "streak12", emoji: "🌋", label: "Inarrêtable", desc: "12 semaines d'affilée", test: (c) => c.best >= 12 },
+  { id: "pr1", emoji: "🏆", label: "Premier record", desc: "Bats 1 PR", test: (c) => c.prCount >= 1 },
+  { id: "pr10", emoji: "👑", label: "Briseur de records", desc: "10 PR enregistrés", test: (c) => c.prCount >= 10 },
+  { id: "lvl5", emoji: "⭐", label: "Niveau 5", desc: "Atteins le niveau 5", test: (c) => c.level >= 5 },
+  { id: "lvl15", emoji: "🌟", label: "Niveau 15", desc: "Atteins le niveau 15", test: (c) => c.level >= 15 },
+  { id: "vol5k", emoji: "🐘", label: "5 tonnes", desc: "5000 kg dans une séance", test: (c) => c.maxVolume >= 5000 },
+  { id: "explorer", emoji: "🧭", label: "Explorateur", desc: "8 exercices différents", test: (c) => c.distinctEx >= 8 },
+];
+
+function StreakBadges({ history, levelInfo, prs, lifts }) {
+  const ctx = useMemo(() => {
+    const s = computeStreak(history);
+    let maxVolume = 0; const exSet = new Set();
+    history.forEach((se) => {
+      let v = 0; se.exercises?.forEach((e) => { exSet.add(e.key); e.sets.forEach((st) => { v += (Number(st.weight) || 0) * (Number(st.reps) || 0); }); });
+      if (v > maxVolume) maxVolume = v;
+    });
+    return { ...s, level: levelInfo?.level || 0, prCount: Object.keys(prs || {}).length, maxVolume, distinctEx: exSet.size };
+  }, [history, levelInfo, prs]);
+
+  const earned = BADGES.filter((b) => b.test(ctx));
+  return (
+    <>
+      <section style={S.card}>
+        <div style={S.cardTitle}>Régularité</div>
+        <div style={{ display: "flex", gap: 10, marginTop: 10, textAlign: "center" }}>
+          <div style={{ flex: 1, background: "var(--inner,#10151d)", borderRadius: 12, padding: "12px 6px" }}>
+            <div style={{ fontSize: 26, fontWeight: 900, color: "var(--accent-glow,#ff5c8a)" }}>🔥 {ctx.current}</div>
+            <div style={{ fontSize: 11, opacity: 0.6 }}>semaines d'affilée</div>
+          </div>
+          <div style={{ flex: 1, background: "var(--inner,#10151d)", borderRadius: 12, padding: "12px 6px" }}>
+            <div style={{ fontSize: 26, fontWeight: 900 }}>{ctx.weekCount}</div>
+            <div style={{ fontSize: 11, opacity: 0.6 }}>séances / 7 j</div>
+          </div>
+          <div style={{ flex: 1, background: "var(--inner,#10151d)", borderRadius: 12, padding: "12px 6px" }}>
+            <div style={{ fontSize: 26, fontWeight: 900 }}>{ctx.best}</div>
+            <div style={{ fontSize: 11, opacity: 0.6 }}>record streak</div>
+          </div>
+        </div>
+      </section>
+
+      <section style={S.card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <div style={S.cardTitle}>Badges</div>
+          <div style={{ fontSize: 12, opacity: 0.55 }}>{earned.length}/{BADGES.length}</div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 12 }}>
+          {BADGES.map((b) => {
+            const got = b.test(ctx);
+            return (
+              <div key={b.id} title={`${b.label} — ${b.desc}`} style={{
+                textAlign: "center", padding: "10px 4px", borderRadius: 12,
+                background: got ? "var(--inner,#10151d)" : "transparent",
+                border: got ? "1px solid var(--accent,#e0245e)" : "1px dashed var(--card-border,#2a3038)",
+                opacity: got ? 1 : 0.4,
+              }}>
+                <div style={{ fontSize: 26, filter: got ? "none" : "grayscale(1)" }}>{b.emoji}</div>
+                <div style={{ fontSize: 9.5, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>{b.label}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: 11, opacity: 0.45, marginTop: 10, textAlign: "center" }}>Touche un badge pour voir comment le débloquer.</div>
+      </section>
+    </>
+  );
+}
+
 function Profil({ sub, setSub, overall, muscleScores, loggedCount, history, cardio, levelInfo, totalXp, xpNow, bw, profile, setProfile, lifts, prs, dataTabProps, onResetOnboarding, account, setAccount, flash }) {
   const subs = [["apercu","Aperçu"],["rangs","Rangs"],["historique","Historique"],["stats","Stats"],["calendrier","Calendrier"],["mesures","Mesures"],["parametres","Paramètres"]];
   return (
@@ -2847,6 +2963,7 @@ function Profil({ sub, setSub, overall, muscleScores, loggedCount, history, card
             </div>
           </section>
           <Overview overall={overall} muscleScores={muscleScores} loggedCount={loggedCount} setTab={() => setSub("rangs")} history={history} levelInfo={levelInfo} totalXp={totalXp} xpNow={xpNow} hideHero />
+          <StreakBadges history={history} levelInfo={levelInfo} prs={prs} lifts={lifts} />
         </>
       )}
       {sub === "rangs" && <RanksTab muscleScores={muscleScores} bw={bw} />}
@@ -3287,6 +3404,26 @@ function SessionLogger({ routine, lastSessionSets, prs, onFinish, onCancel }) {
     if (rest <= 0) return;
     const id = setInterval(() => setRest((r) => Math.max(0, r - 1)), 1000);
     return () => clearInterval(id);
+  }, [rest]);
+  // signal de fin de repos (vibration + bip)
+  const prevRest = useRef(0);
+  useEffect(() => {
+    if (prevRest.current > 0 && rest === 0) {
+      try { if (navigator.vibrate) navigator.vibrate([120, 60, 120]); } catch {}
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) {
+          const ac = new Ctx(); const o = ac.createOscillator(); const g = ac.createGain();
+          o.connect(g); g.connect(ac.destination); o.frequency.value = 880; o.type = "sine";
+          g.gain.setValueAtTime(0.001, ac.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.25, ac.currentTime + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.35);
+          o.start(); o.stop(ac.currentTime + 0.36);
+          setTimeout(() => { try { ac.close(); } catch {} }, 600);
+        }
+      } catch {}
+    }
+    prevRest.current = rest;
   }, [rest]);
 
   const update = (ei, si, field, val) => {
