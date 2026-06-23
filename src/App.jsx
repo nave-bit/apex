@@ -21,6 +21,8 @@ async function getSupabase() {
 // Clés localStorage synchronisées (doit rester aligné avec K + apex_measures).
 const SYNC_KEYS = ["apex_profile","apex_lifts","apex_routines","apex_history","apex_prs","apex_xp","apex_cardio","apex_onboarded","apex_measures"];
 
+const LOCAL_TS_KEY = "apex_updated_at"; // horodatage (ms) de la dernière modif locale
+
 function readLocalBundle() {
   const out = {};
   for (const k of SYNC_KEYS) {
@@ -38,16 +40,34 @@ function writeLocalBundle(bundle) {
   }
   return changed;
 }
+// Le paquet contient-il de vraies données ? (évite d'écraser du plein par du vide)
+function bundleHasData(bundle) {
+  if (!bundle || typeof bundle !== "object") return false;
+  for (const k of SYNC_KEYS) {
+    const v = bundle[k];
+    if (v == null) continue;
+    if (Array.isArray(v) && v.length) return true;
+    if (typeof v === "object" && !Array.isArray(v) && Object.keys(v).length) return true;
+    if (typeof v === "number" && v > 0) return true;
+    if (typeof v === "boolean" && v) continue; // onboarded seul ne compte pas
+    if (typeof v === "string" && v && v !== "null" && v !== "{}" && v !== "[]") return true;
+  }
+  return false;
+}
+function getLocalTs() { const n = Number(window.localStorage.getItem(LOCAL_TS_KEY)); return Number.isFinite(n) ? n : 0; }
+function setLocalTs(ms) { try { window.localStorage.setItem(LOCAL_TS_KEY, String(ms)); } catch {} }
 
 const cloudSync = {
   async pull(client, userId) {
-    const { data, error } = await client.from("apex_data").select("data").eq("user_id", userId).maybeSingle();
+    const { data, error } = await client.from("apex_data").select("data, updated_at").eq("user_id", userId).maybeSingle();
     if (error) return { ok: false, error };
-    return { ok: true, data: data?.data ?? null };
+    return { ok: true, data: data?.data ?? null, updatedAt: data?.updated_at ? Date.parse(data.updated_at) : 0 };
   },
   async push(client, userId) {
     const bundle = readLocalBundle();
-    const { error } = await client.from("apex_data").upsert({ user_id: userId, data: bundle, updated_at: new Date().toISOString() });
+    const now = new Date();
+    const { error } = await client.from("apex_data").upsert({ user_id: userId, data: bundle, updated_at: now.toISOString() });
+    if (!error) setLocalTs(now.getTime());
     return { ok: !error, error };
   },
 };
@@ -1852,7 +1872,7 @@ export default function App() {
 
   /* --------- SYNCHRO CLOUD : tire à la connexion, pousse aux changements --------- */
   const syncReady = useRef(false);
-  // À la connexion : on récupère les données cloud (ou on pousse le local la 1ère fois)
+  // À la connexion : fusion NON destructive (on n'écrase jamais du plein par du vide)
   useEffect(() => {
     if (!account?.id) { syncReady.current = false; return; }
     let cancelled = false;
@@ -1861,17 +1881,32 @@ export default function App() {
       if (!client || cancelled) return;
       const res = await cloudSync.pull(client, account.id);
       if (cancelled || !res.ok) { if (!res.ok) console.warn("APEX pull:", res.error?.message); return; }
-      if (res.data && Object.keys(res.data).length) {
-        // Données cloud existantes -> on écrase le local puis on rehydrate
+
+      const localHas = bundleHasData(readLocalBundle());
+      const cloudHas = bundleHasData(res.data);
+      const localTs = getLocalTs();
+
+      const adoptCloud = () => {
         const changed = writeLocalBundle(res.data);
+        setLocalTs(res.updatedAt || Date.now()); // évite une boucle de rechargement
         if (changed && !sessionStorage.getItem("apex_synced_once")) {
           sessionStorage.setItem("apex_synced_once", "1");
           window.location.reload();
-          return;
+          return true;
         }
+        return false;
+      };
+
+      if (!cloudHas) {
+        // Cloud vide/insignifiant -> on envoie le local, JAMAIS l'inverse
+        if (localHas) await cloudSync.push(client, account.id);
+      } else if (!localHas) {
+        // Local vide, cloud plein -> on adopte le cloud
+        if (adoptCloud()) return;
       } else {
-        // Aucune donnée cloud -> première synchro, on envoie le local
-        await cloudSync.push(client, account.id);
+        // Les deux ont des données -> le plus récent gagne
+        if (res.updatedAt > localTs) { if (adoptCloud()) return; }
+        else await cloudSync.push(client, account.id);
       }
       syncReady.current = true;
     })();
@@ -1881,6 +1916,7 @@ export default function App() {
   // Pousse (anti-rebond) à chaque modification quand l'utilisateur est connecté
   useEffect(() => {
     if (!account?.id || !syncReady.current) return;
+    setLocalTs(Date.now()); // marque le local comme la version la plus récente
     const t = setTimeout(async () => {
       const client = await getSupabase();
       if (client) cloudSync.push(client, account.id);
