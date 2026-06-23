@@ -1824,7 +1824,8 @@ function ProgressBar({ value, color }) {
     <div style={{ width: `${Math.round(value * 100)}%`, height: "100%", background: `linear-gradient(90deg, ${color}aa, ${color})`, borderRadius: 99, transition: "width .5s cubic-bezier(.2,.8,.2,1)" }} /></div>;
 }
 /* Mini courbe de progression (1RM dans le temps) */
-function ProgressChart({ points }) {
+function ProgressChart({ points, unit = "kg", onGoToSession }) {
+  const [sel, setSel] = useState(null);
   if (!points || points.length < 2) return <div style={{ fontSize: 12.5, opacity: 0.45, padding: "12px 0" }}>Pas encore assez de données pour tracer une courbe (au moins 2 séances).</div>;
   const W = 300, H = 110, pad = 8;
   const xs = points.map((p) => +new Date(p.date));
@@ -1835,15 +1836,46 @@ function ProgressChart({ points }) {
   const sy = (y) => H - pad - ((y - minY) / (maxY - minY || 1)) * (H - 2 * pad);
   const d = points.map((p, i) => `${i ? "L" : "M"}${sx(+new Date(p.date)).toFixed(1)},${sy(p.value).toFixed(1)}`).join(" ");
   const area = `${d} L${sx(maxX).toFixed(1)},${H - pad} L${sx(minX).toFixed(1)},${H - pad} Z`;
+  const pt = sel != null ? points[sel] : null;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
-      <defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e0245e" stopOpacity="0.3" /><stop offset="100%" stopColor="#e0245e" stopOpacity="0" /></linearGradient></defs>
-      <path d={area} fill="url(#pg)" />
-      <path d={d} fill="none" stroke="#e0245e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      {points.map((p, i) => <circle key={i} cx={sx(+new Date(p.date))} cy={sy(p.value)} r="3" fill="#ff5c8a" />)}
-      <text x={pad} y={12} fontSize="9" fill="#8a92a0">{maxY} kg</text>
-      <text x={pad} y={H - 1} fontSize="9" fill="#8a92a0">{minY} kg</text>
-    </svg>
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", touchAction: "manipulation" }}>
+        <defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--accent,#e0245e)" stopOpacity="0.3" /><stop offset="100%" stopColor="var(--accent,#e0245e)" stopOpacity="0" /></linearGradient></defs>
+        <path d={area} fill="url(#pg)" />
+        <path d={d} fill="none" stroke="var(--accent,#e0245e)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        {pt && <line x1={sx(+new Date(pt.date))} y1={pad} x2={sx(+new Date(pt.date))} y2={H - pad} stroke="var(--accent-glow,#ff5c8a)" strokeWidth="1" strokeDasharray="3 3" opacity="0.7" />}
+        {points.map((p, i) => (
+          <g key={i} onClick={() => setSel(i === sel ? null : i)} style={{ cursor: "pointer" }}>
+            <circle cx={sx(+new Date(p.date))} cy={sy(p.value)} r="11" fill="transparent" />
+            <circle cx={sx(+new Date(p.date))} cy={sy(p.value)} r={i === sel ? 5 : 3} fill={i === sel ? "var(--accent-glow,#ff5c8a)" : "var(--accent-glow,#ff5c8a)"} stroke={i === sel ? "var(--text,#fff)" : "none"} strokeWidth="1.5" />
+          </g>
+        ))}
+        <text x={pad} y={12} fontSize="9" fill="#8a92a0">{maxY}{unit ? " " + unit : ""}</text>
+        <text x={pad} y={H - 1} fontSize="9" fill="#8a92a0">{minY}{unit ? " " + unit : ""}</text>
+      </svg>
+      {pt ? (
+        <div style={{ marginTop: 8, padding: 12, borderRadius: 12, background: "var(--inner,#10151d)", border: "1px solid var(--card-border,#2a3038)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <div style={{ fontWeight: 800, fontSize: 14 }}>{Math.round(pt.value)}{unit ? " " + unit : ""}</div>
+            <div style={{ fontSize: 12, opacity: 0.6 }}>{new Date(pt.date).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</div>
+          </div>
+          <div style={{ fontSize: 12.5, opacity: 0.8, marginTop: 4 }}>
+            {pt.secs != null && pt.secs !== undefined && pt.weight == null
+              ? `Meilleure série : ${pt.secs} s`
+              : (pt.weight != null && pt.reps != null)
+                ? `Meilleure série : ${pt.weight} kg × ${pt.reps} rép.`
+                : "Détail de série indisponible"}
+          </div>
+          {onGoToSession && pt.sessionId && (
+            <button style={{ ...S.btnGhost, width: "100%", marginTop: 10, fontSize: 13 }} onClick={() => onGoToSession(pt.sessionId)}>
+              ✏️ Corriger cette séance →
+            </button>
+          )}
+        </div>
+      ) : (
+        <div style={{ fontSize: 11, opacity: 0.4, marginTop: 6, textAlign: "center" }}>Touche un point pour voir le détail de la séance.</div>
+      )}
+    </div>
   );
 }
 function Toast({ msg }) { return msg ? <div style={S.toast}>{msg}</div> : null; }
@@ -1866,6 +1898,8 @@ export default function App() {
   const [xpRaw, setXpRaw] = useState(() => store.get(K.xp, {}));
   const [editingRoutine, setEditingRoutine] = useState(null);
   const [liveSession, setLiveSession] = useState(null);
+  const [focusSessionId, setFocusSessionId] = useState(null);
+  const goToSession = (id) => { setFocusSessionId(id); setProfilSub("historique"); setTab("profil"); };
   const [celebration, setCelebration] = useState(null);
   const [toast, setToast] = useState("");
   const [account, setAccount] = useState(null);
@@ -1973,8 +2007,11 @@ export default function App() {
   const progressionFor = (exKey) => {
     const ex = EX_BY_KEY[exKey]; const pts = [];
     [...history].reverse().forEach((s) => { const f = s.exercises?.find((e) => e.key === exKey); if (!f) return;
-      let best = 0; f.sets.forEach((st) => { const e = ex.isTime ? Number(st.secs) || 0 : estimate1RM(st.weight, st.reps); if (e > best) best = e; });
-      if (best > 0) pts.push({ date: s.date, value: best }); });
+      let best = 0, bestSet = null; f.sets.forEach((st) => { const e = ex.isTime ? Number(st.secs) || 0 : estimate1RM(st.weight, st.reps); if (e > best) { best = e; bestSet = st; } });
+      if (best > 0) pts.push({ date: s.date, value: best, sessionId: s.id,
+        weight: bestSet && !ex.isTime ? Number(bestSet.weight) || null : null,
+        reps: bestSet && !ex.isTime ? Number(bestSet.reps) || null : null,
+        secs: bestSet && ex.isTime ? Number(bestSet.secs) || null : null }); });
     return pts;
   };
   // nombre de séances où l'exo apparaît
@@ -1983,8 +2020,8 @@ export default function App() {
   const weightHistoryFor = (exKey) => {
     const pts = [];
     [...history].reverse().forEach((s) => { const f = s.exercises?.find((e) => e.key === exKey); if (!f) return;
-      let maxW = 0; f.sets.forEach((st) => { const w = Number(st.weight) || 0; if (w > maxW) maxW = w; });
-      if (maxW > 0) pts.push({ date: s.date, value: maxW }); });
+      let maxW = 0, bestSet = null; f.sets.forEach((st) => { const w = Number(st.weight) || 0; if (w > maxW) { maxW = w; bestSet = st; } });
+      if (maxW > 0) pts.push({ date: s.date, value: maxW, sessionId: s.id, weight: maxW, reps: bestSet ? Number(bestSet.reps) || null : null }); });
     return pts;
   };
 
@@ -2089,9 +2126,10 @@ export default function App() {
           overall={overall} muscleScores={muscleScores} loggedCount={loggedCount} history={history} cardio={cardio}
           levelInfo={levelInfo} totalXp={totalXp} xpNow={xpNow} bw={bw} profile={profile} setProfile={setProfile}
           lifts={lifts} prs={prs} flash={flash} account={account} setAccount={setAccount} onResetOnboarding={() => { setOnboarded(false); }}
+          focusSessionId={focusSessionId} onFocusHandled={() => setFocusSessionId(null)}
           dataTabProps={{ profile, routines, lifts, prs, history, cardio, xp: xpRaw, onImportBackup: importBackup, onImportHevy: importHevy, onImportRoutine: importRoutine, flash,
             onClearHistory: () => setHistory([]), onDeleteSession: (id) => setHistory((p) => p.filter((s) => s.id !== id)), onUpdateSession: (id, upd) => setHistory((p) => p.map((s) => s.id === id ? { ...s, ...upd } : s)) }} />}
-        {tab === "exos" && <ExoByMuscle lifts={lifts} prs={prs} bw={bw} setBestLift={setBestLift} setPR={setPR} progressionFor={progressionFor} exoCount={exoCount} weightHistoryFor={weightHistoryFor} flash={flash} />}
+        {tab === "exos" && <ExoByMuscle lifts={lifts} prs={prs} bw={bw} setBestLift={setBestLift} setPR={setPR} progressionFor={progressionFor} exoCount={exoCount} weightHistoryFor={weightHistoryFor} onGoToSession={goToSession} flash={flash} />}
         {tab === "seances" && (editingRoutine
           ? <RoutineEditor routine={editingRoutine} onSave={saveRoutine} onCancel={() => setEditingRoutine(null)} />
           : <SeancesHub sub={seancesSub} setSub={setSeancesSub} routines={routines} history={history}
@@ -2853,32 +2891,65 @@ function computeStreak(history) {
 }
 
 const BADGES = [
-  { id: "first", emoji: "🌱", label: "Première séance", desc: "Termine 1 séance", test: (c) => c.total >= 1 },
-  { id: "s10", emoji: "💪", label: "Habitué", desc: "10 séances", test: (c) => c.total >= 10 },
-  { id: "s50", emoji: "🏋️", label: "Assidu", desc: "50 séances", test: (c) => c.total >= 50 },
-  { id: "s100", emoji: "🦾", label: "Machine", desc: "100 séances", test: (c) => c.total >= 100 },
-  { id: "streak4", emoji: "🔥", label: "En feu", desc: "4 semaines d'affilée", test: (c) => c.best >= 4 },
-  { id: "streak12", emoji: "🌋", label: "Inarrêtable", desc: "12 semaines d'affilée", test: (c) => c.best >= 12 },
-  { id: "pr1", emoji: "🏆", label: "Premier record", desc: "Bats 1 PR", test: (c) => c.prCount >= 1 },
-  { id: "pr10", emoji: "👑", label: "Briseur de records", desc: "10 PR enregistrés", test: (c) => c.prCount >= 10 },
-  { id: "lvl5", emoji: "⭐", label: "Niveau 5", desc: "Atteins le niveau 5", test: (c) => c.level >= 5 },
-  { id: "lvl15", emoji: "🌟", label: "Niveau 15", desc: "Atteins le niveau 15", test: (c) => c.level >= 15 },
-  { id: "vol5k", emoji: "🐘", label: "5 tonnes", desc: "5000 kg dans une séance", test: (c) => c.maxVolume >= 5000 },
-  { id: "explorer", emoji: "🧭", label: "Explorateur", desc: "8 exercices différents", test: (c) => c.distinctEx >= 8 },
+  // Régularité
+  { id: "first", cat: "Régularité", emoji: "🌱", label: "Première séance", desc: "Termine ta toute première séance.", test: (c) => c.total >= 1, prog: (c) => ({ cur: c.total, target: 1, unit: "" }) },
+  { id: "s10", cat: "Régularité", emoji: "💪", label: "Habitué", desc: "Termine 10 séances au total.", test: (c) => c.total >= 10, prog: (c) => ({ cur: c.total, target: 10, unit: "" }) },
+  { id: "s50", cat: "Régularité", emoji: "🏋️", label: "Assidu", desc: "Termine 50 séances au total.", test: (c) => c.total >= 50, prog: (c) => ({ cur: c.total, target: 50, unit: "" }) },
+  { id: "s100", cat: "Régularité", emoji: "🦾", label: "Machine", desc: "Termine 100 séances au total.", test: (c) => c.total >= 100, prog: (c) => ({ cur: c.total, target: 100, unit: "" }) },
+  { id: "streak4", cat: "Régularité", emoji: "🔥", label: "En feu", desc: "Entraîne-toi 4 semaines consécutives.", test: (c) => c.best >= 4, prog: (c) => ({ cur: c.best, target: 4, unit: " sem" }) },
+  { id: "streak12", cat: "Régularité", emoji: "🌋", label: "Inarrêtable", desc: "Entraîne-toi 12 semaines consécutives.", test: (c) => c.best >= 12, prog: (c) => ({ cur: c.best, target: 12, unit: " sem" }) },
+  // Niveau & records
+  { id: "lvl5", cat: "Progression", emoji: "⭐", label: "Niveau 5", desc: "Atteins le niveau 5.", test: (c) => c.level >= 5, prog: (c) => ({ cur: c.level, target: 5, unit: "" }) },
+  { id: "lvl15", cat: "Progression", emoji: "🌟", label: "Niveau 15", desc: "Atteins le niveau 15.", test: (c) => c.level >= 15, prog: (c) => ({ cur: c.level, target: 15, unit: "" }) },
+  { id: "pr1", cat: "Progression", emoji: "🏆", label: "Premier record", desc: "Bats ton premier record personnel (PR).", test: (c) => c.prCount >= 1, prog: (c) => ({ cur: c.prCount, target: 1, unit: "" }) },
+  { id: "pr10", cat: "Progression", emoji: "👑", label: "Briseur de records", desc: "Enregistre 10 records personnels.", test: (c) => c.prCount >= 10, prog: (c) => ({ cur: c.prCount, target: 10, unit: "" }) },
+  { id: "vol5k", cat: "Progression", emoji: "🐘", label: "5 tonnes", desc: "Soulève 5000 kg de volume dans une seule séance.", test: (c) => c.maxVolume >= 5000, prog: (c) => ({ cur: Math.round(c.maxVolume), target: 5000, unit: " kg" }) },
+  { id: "explorer", cat: "Progression", emoji: "🧭", label: "Explorateur", desc: "Travaille 8 exercices différents.", test: (c) => c.distinctEx >= 8, prog: (c) => ({ cur: c.distinctEx, target: 8, unit: "" }) },
+  // Force relative au poids de corps
+  { id: "bench1x", cat: "Force relative", emoji: "🛏️", label: "Couché = ton poids", desc: "Développé couché à 1× ton poids de corps (1RM estimé).", test: (c) => c.rel("bench") >= 1, prog: (c) => ({ cur: c.lift("bench"), target: Math.round(c.bw), unit: " kg" }) },
+  { id: "squat15", cat: "Force relative", emoji: "🦵", label: "Squat 1,5×", desc: "Squat à 1,5× ton poids de corps (1RM estimé).", test: (c) => c.rel("squat") >= 1.5, prog: (c) => ({ cur: c.lift("squat"), target: Math.round(c.bw * 1.5), unit: " kg" }) },
+  { id: "dead2x", cat: "Force relative", emoji: "🪨", label: "Terre 2×", desc: "Soulevé de terre à 2× ton poids de corps (1RM estimé).", test: (c) => c.rel("deadlift") >= 2, prog: (c) => ({ cur: c.lift("deadlift"), target: Math.round(c.bw * 2), unit: " kg" }) },
+  { id: "ohp075", cat: "Force relative", emoji: "🏗️", label: "Militaire 0,75×", desc: "Développé militaire à 0,75× ton poids de corps (1RM estimé).", test: (c) => c.rel("ohp") >= 0.75, prog: (c) => ({ cur: c.lift("ohp"), target: Math.round(c.bw * 0.75), unit: " kg" }) },
+  // Calisthénie
+  { id: "firstPull", cat: "Calisthénie", emoji: "🧗", label: "Première figure", desc: "Réussis ta première traction (calisthénie).", test: (c) => c.reps("pullup") >= 1, prog: (c) => ({ cur: c.reps("pullup"), target: 1, unit: " rep" }) },
+  { id: "pull10", cat: "Calisthénie", emoji: "🚀", label: "10 tractions", desc: "10 tractions sur une même série.", test: (c) => c.reps("pullup") >= 10, prog: (c) => ({ cur: c.reps("pullup"), target: 10, unit: " reps" }) },
+  { id: "pull20", cat: "Calisthénie", emoji: "🦅", label: "20 tractions", desc: "20 tractions sur une même série.", test: (c) => c.reps("pullup") >= 20, prog: (c) => ({ cur: c.reps("pullup"), target: 20, unit: " reps" }) },
+  { id: "dips20", cat: "Calisthénie", emoji: "💠", label: "20 dips", desc: "20 dips sur une même série.", test: (c) => c.reps("dips") >= 20, prog: (c) => ({ cur: c.reps("dips"), target: 20, unit: " reps" }) },
+  { id: "push40", cat: "Calisthénie", emoji: "⊟", label: "40 pompes", desc: "40 pompes sur une même série.", test: (c) => c.reps("pushup") >= 40, prog: (c) => ({ cur: c.reps("pushup"), target: 40, unit: " reps" }) },
+  { id: "plank3", cat: "Calisthénie", emoji: "🧘", label: "Gainage 3 min", desc: "Tiens un gainage de 180 secondes.", test: (c) => c.secs("plank") >= 180, prog: (c) => ({ cur: c.secs("plank"), target: 180, unit: " s" }) },
 ];
 
-function StreakBadges({ history, levelInfo, prs, lifts }) {
+function StreakBadges({ history, levelInfo, prs, lifts, bw }) {
+  const [sel, setSel] = useState(null);
   const ctx = useMemo(() => {
     const s = computeStreak(history);
     let maxVolume = 0; const exSet = new Set();
+    const maxReps = {}; const maxSecs = {};
     history.forEach((se) => {
-      let v = 0; se.exercises?.forEach((e) => { exSet.add(e.key); e.sets.forEach((st) => { v += (Number(st.weight) || 0) * (Number(st.reps) || 0); }); });
+      let v = 0;
+      se.exercises?.forEach((e) => {
+        exSet.add(e.key);
+        e.sets.forEach((st) => {
+          v += (Number(st.weight) || 0) * (Number(st.reps) || 0);
+          const r = Number(st.reps) || 0; if (r > (maxReps[e.key] || 0)) maxReps[e.key] = r;
+          const sc = Number(st.secs) || 0; if (sc > (maxSecs[e.key] || 0)) maxSecs[e.key] = sc;
+        });
+      });
       if (v > maxVolume) maxVolume = v;
     });
-    return { ...s, level: levelInfo?.level || 0, prCount: Object.keys(prs || {}).length, maxVolume, distinctEx: exSet.size };
-  }, [history, levelInfo, prs]);
+    const lift = (k) => Number(lifts?.[k]?.best1RM) || 0;
+    return {
+      ...s, level: levelInfo?.level || 0, prCount: Object.keys(prs || {}).length,
+      maxVolume, distinctEx: exSet.size, bw: Number(bw) || 0,
+      lift, rel: (k) => (Number(bw) > 0 ? lift(k) / Number(bw) : 0),
+      reps: (k) => maxReps[k] || 0, secs: (k) => maxSecs[k] || 0,
+    };
+  }, [history, levelInfo, prs, lifts, bw]);
 
   const earned = BADGES.filter((b) => b.test(ctx));
+  const cats = [...new Set(BADGES.map((b) => b.cat))];
+  const selBadge = BADGES.find((b) => b.id === sel);
+
   return (
     <>
       <section style={S.card}>
@@ -2904,29 +2975,60 @@ function StreakBadges({ history, levelInfo, prs, lifts }) {
           <div style={S.cardTitle}>Badges</div>
           <div style={{ fontSize: 12, opacity: 0.55 }}>{earned.length}/{BADGES.length}</div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 12 }}>
-          {BADGES.map((b) => {
-            const got = b.test(ctx);
-            return (
-              <div key={b.id} title={`${b.label} — ${b.desc}`} style={{
-                textAlign: "center", padding: "10px 4px", borderRadius: 12,
-                background: got ? "var(--inner,#10151d)" : "transparent",
-                border: got ? "1px solid var(--accent,#e0245e)" : "1px dashed var(--card-border,#2a3038)",
-                opacity: got ? 1 : 0.4,
-              }}>
-                <div style={{ fontSize: 26, filter: got ? "none" : "grayscale(1)" }}>{b.emoji}</div>
-                <div style={{ fontSize: 9.5, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>{b.label}</div>
+
+        {selBadge && (() => {
+          const got = selBadge.test(ctx); const p = selBadge.prog ? selBadge.prog(ctx) : null;
+          const pct = p && p.target ? Math.min(100, Math.round((p.cur / p.target) * 100)) : (got ? 100 : 0);
+          return (
+            <div style={{ marginTop: 12, padding: 14, borderRadius: 12, background: "var(--inner,#10151d)", border: `1px solid ${got ? "var(--accent,#e0245e)" : "var(--card-border,#2a3038)"}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ fontSize: 30, filter: got ? "none" : "grayscale(1)", opacity: got ? 1 : 0.6 }}>{selBadge.emoji}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 800, fontSize: 15 }}>{selBadge.label} {got && <span style={{ color: "#4ade80" }}>✓</span>}</div>
+                  <div style={{ fontSize: 12, opacity: 0.7, marginTop: 2 }}>{selBadge.desc}</div>
+                </div>
               </div>
-            );
-          })}
-        </div>
-        <div style={{ fontSize: 11, opacity: 0.45, marginTop: 10, textAlign: "center" }}>Touche un badge pour voir comment le débloquer.</div>
+              {p && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ height: 8, borderRadius: 99, background: "var(--card,#141921)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: got ? "#4ade80" : "var(--accent,#e0245e)", transition: ".3s" }} />
+                  </div>
+                  <div style={{ fontSize: 11.5, opacity: 0.65, marginTop: 5, textAlign: "right" }}>{Math.round(p.cur)}{p.unit} / {p.target}{p.unit}</div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {cats.map((cat) => (
+          <div key={cat} style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 11.5, fontWeight: 700, opacity: 0.5, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>{cat}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+              {BADGES.filter((b) => b.cat === cat).map((b) => {
+                const got = b.test(ctx); const isSel = sel === b.id;
+                return (
+                  <button key={b.id} onClick={() => setSel(isSel ? null : b.id)} style={{
+                    textAlign: "center", padding: "10px 4px", borderRadius: 12, cursor: "pointer",
+                    background: got ? "var(--inner,#10151d)" : "transparent",
+                    border: isSel ? "2px solid var(--accent-glow,#ff5c8a)" : got ? "1px solid var(--accent,#e0245e)" : "1px dashed var(--card-border,#2a3038)",
+                    opacity: got ? 1 : 0.45, color: "var(--text,#e8ecf2)",
+                  }}>
+                    <div style={{ fontSize: 24, filter: got ? "none" : "grayscale(1)" }}>{b.emoji}</div>
+                    <div style={{ fontSize: 9.5, fontWeight: 700, marginTop: 4, lineHeight: 1.2 }}>{b.label}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+        <div style={{ fontSize: 11, opacity: 0.45, marginTop: 12, textAlign: "center" }}>Touche un badge pour voir comment le débloquer et ta progression.</div>
       </section>
     </>
   );
 }
 
-function Profil({ sub, setSub, overall, muscleScores, loggedCount, history, cardio, levelInfo, totalXp, xpNow, bw, profile, setProfile, lifts, prs, dataTabProps, onResetOnboarding, account, setAccount, flash }) {
+
+function Profil({ sub, setSub, overall, muscleScores, loggedCount, history, cardio, levelInfo, totalXp, xpNow, bw, profile, setProfile, lifts, prs, dataTabProps, onResetOnboarding, account, setAccount, focusSessionId, onFocusHandled, flash }) {
   const subs = [["apercu","Aperçu"],["rangs","Rangs"],["historique","Historique"],["stats","Stats"],["calendrier","Calendrier"],["mesures","Mesures"],["parametres","Paramètres"]];
   return (
     <div style={{ display: "grid", gap: 14 }}>
@@ -2963,11 +3065,11 @@ function Profil({ sub, setSub, overall, muscleScores, loggedCount, history, card
             </div>
           </section>
           <Overview overall={overall} muscleScores={muscleScores} loggedCount={loggedCount} setTab={() => setSub("rangs")} history={history} levelInfo={levelInfo} totalXp={totalXp} xpNow={xpNow} hideHero />
-          <StreakBadges history={history} levelInfo={levelInfo} prs={prs} lifts={lifts} />
+          <StreakBadges history={history} levelInfo={levelInfo} prs={prs} lifts={lifts} bw={bw} />
         </>
       )}
       {sub === "rangs" && <RanksTab muscleScores={muscleScores} bw={bw} />}
-      {sub === "historique" && <History history={history} bw={bw} profile={profile} routines={[]} lifts={lifts} prs={prs} onClear={dataTabProps.onClearHistory} onDeleteSession={dataTabProps.onDeleteSession} onUpdateSession={dataTabProps.onUpdateSession} flash={flash} />}
+      {sub === "historique" && <History history={history} bw={bw} profile={profile} routines={[]} lifts={lifts} prs={prs} onClear={dataTabProps.onClearHistory} onDeleteSession={dataTabProps.onDeleteSession} onUpdateSession={dataTabProps.onUpdateSession} focusSessionId={focusSessionId} onFocusHandled={onFocusHandled} flash={flash} />}
       {sub === "stats" && <StatsTab history={history} cardio={cardio} bw={bw} />}
       {sub === "calendrier" && <Calendar history={history} cardio={cardio} />}
       {sub === "mesures" && <Measures profile={profile} setProfile={setProfile} flash={flash} />}
@@ -3058,7 +3160,7 @@ function Radar({ scores }) {
 }
 
 /* ---------------------------- MUSCLES --------------------------------- */
-function ExoByMuscle({ lifts, prs, bw, setBestLift, setPR, progressionFor, exoCount, weightHistoryFor, flash }) {
+function ExoByMuscle({ lifts, prs, bw, setBestLift, setPR, progressionFor, exoCount, weightHistoryFor, onGoToSession, flash }) {
   const [openMuscle, setOpenMuscle] = useState(MUSCLES[0].key);
   const [openExo, setOpenExo] = useState(null);
   const [search, setSearch] = useState("");
@@ -3099,8 +3201,8 @@ function ExoByMuscle({ lifts, prs, bw, setBestLift, setPR, progressionFor, exoCo
                 : <div style={{ ...S.suggBox, marginTop: 12 }}>🎯 Pour passer <b>{t.nextLabel}</b> : {t.isTime ? `tiens ${t.target1RM}s` : `atteins ~${t.target1RM} kg en 1RM`}{!t.isTime && rec?.best1RM ? ` (soit +${t.delta} kg)` : ""}.</div>;
             })()}
             <PRInput ex={ex} value={prs[ex.key]} onSave={(v) => { setPR(ex.key, v); flash("PR enregistré ✓"); }} />
-            <div style={{ marginTop: 14 }}><div style={S.miniLabel}>Progression du 1RM estimé</div><div style={{ marginTop: 6 }}><ProgressChart points={progressionFor(ex.key)} /></div></div>
-            {!ex.isTime && <div style={{ marginTop: 14 }}><div style={S.miniLabel}>Charge max par séance (kg)</div><div style={{ marginTop: 6 }}><ProgressChart points={weightHistoryFor(ex.key)} /></div></div>}
+            <div style={{ marginTop: 14 }}><div style={S.miniLabel}>Progression du 1RM estimé</div><div style={{ marginTop: 6 }}><ProgressChart points={progressionFor(ex.key)} unit={ex.isTime ? "s" : "kg"} onGoToSession={onGoToSession} /></div></div>
+            {!ex.isTime && <div style={{ marginTop: 14 }}><div style={S.miniLabel}>Charge max par séance (kg)</div><div style={{ marginTop: 6 }}><ProgressChart points={weightHistoryFor(ex.key)} unit="kg" onGoToSession={onGoToSession} /></div></div>}
             <div style={{ marginTop: 10, fontSize: 12.5, opacity: 0.6 }}>📊 Réalisé <b>{exoCount(ex.key)}</b> fois au total.</div>
             <div style={{ marginTop: 14 }}><div style={S.miniLabel}>Muscles ciblés</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
@@ -3513,13 +3615,22 @@ function SessionLogger({ routine, lastSessionSets, prs, onFinish, onCancel }) {
 }
 
 /* --------------------------- HISTORIQUE ------------------------------- */
-function History({ history, bw, profile, routines, lifts, prs, onClear, onDeleteSession, onUpdateSession, flash }) {
+function History({ history, bw, profile, routines, lifts, prs, onClear, onDeleteSession, onUpdateSession, focusSessionId, onFocusHandled, flash }) {
   const volumeOf = (s) => { let v = 0; s.exercises.forEach((ex) => ex.sets.forEach((st) => { v += (Number(st.weight) || 0) * (Number(st.reps) || 0); })); return Math.round(v); };
   const prevSameName = (s, idx) => history.slice(idx + 1).find((h) => h.name === s.name && h.routineId === s.routineId);
   const [openId, setOpenId] = useState(null);
   const [editing, setEditing] = useState(null); // session en cours d'édition (copie)
 
   const startEdit = (s) => setEditing(JSON.parse(JSON.stringify(s)));
+
+  // Arrivée depuis un graphe : ouvrir + éditer directement la séance ciblée
+  useEffect(() => {
+    if (!focusSessionId) return;
+    const s = history.find((h) => h.id === focusSessionId);
+    if (s) { setOpenId(focusSessionId); setEditing(JSON.parse(JSON.stringify(s))); }
+    onFocusHandled?.();
+  }, [focusSessionId]);
+
   const editSet = (ei, si, field, val) => {
     const v = val.replace(",", "."); if (v !== "" && !/^\d*\.?\d*$/.test(v)) return;
     setEditing((p) => ({ ...p, exercises: p.exercises.map((ex, i) => i !== ei ? ex : { ...ex, sets: ex.sets.map((st, j) => j !== si ? st : { ...st, [field]: v }) }) }));
