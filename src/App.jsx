@@ -1744,68 +1744,83 @@ function Avatar({ muscleScores, size = 230 }) {
    épuré en bas. tierIdx 0..8 (Fer -> Mythique). */
 function RankBadge({ score, size = 64 }) {
   const { tier, sub, tierIdx } = scoreToRank(score);
-  const c = size / 2, r = size / 2;
-  const gid = `rb-${tier.key}-${size}`;
   const lvl = tierIdx;
-  const sc = (n) => (n / 100) * size; // helper d'échelle sur base 100
+  const c = size / 2, r = size / 2;
+  const sc = (n) => (n / 100) * size; // échelle sur base 100
+  // identifiant UNIQUE par instance -> évite toute collision de dégradé/filtre
+  const uid = useMemo(() => Math.random().toString(36).slice(2, 9), []);
+  const gid = `rb-${uid}`;
+  const fill = `url(#${gid})`;
 
-  // Couches décoratives selon le niveau
-  const spikes = []; // pointes/crocs agressifs (hauts rangs)
-  if (lvl >= 6) {
-    const n = 8 + (lvl - 6) * 2;
-    for (let i = 0; i < n; i++) {
-      const a = (Math.PI * 2 * i) / n - Math.PI / 2;
-      const r1 = r - sc(8), r2 = r + sc(lvl >= 8 ? 9 : 6);
-      const aw = 0.12;
-      spikes.push(`${c + r1 * Math.cos(a - aw)},${c + r1 * Math.sin(a - aw)} ${c + r2 * Math.cos(a)},${c + r2 * Math.sin(a)} ${c + r1 * Math.cos(a + aw)},${c + r1 * Math.sin(a + aw)}`);
-    }
+  // anneau / rayons décoratifs selon le palier
+  const deco = [];
+  if (lvl === 3) { // Or : couronne de laurier (deux arcs)
+    deco.push(<path key="l1" d={`M ${c - r + sc(8)} ${c + sc(6)} A ${r - sc(8)} ${r - sc(8)} 0 0 1 ${c - sc(2)} ${c - r + sc(10)}`} fill="none" stroke={tier.glow} strokeWidth={sc(2.5)} strokeLinecap="round" opacity="0.8" />);
+    deco.push(<path key="l2" d={`M ${c + r - sc(8)} ${c + sc(6)} A ${r - sc(8)} ${r - sc(8)} 0 0 0 ${c + sc(2)} ${c - r + sc(10)}`} fill="none" stroke={tier.glow} strokeWidth={sc(2.5)} strokeLinecap="round" opacity="0.8" />);
   }
-  const rays = [];
-  if (lvl >= 3 && lvl < 6) {
-    const n = 6 + lvl;
-    for (let i = 0; i < n; i++) { const a = (Math.PI * 2 * i) / n - Math.PI / 2; const r1 = r - sc(6), r2 = r + sc(4);
-      rays.push(<line key={i} x1={c + r1 * Math.cos(a)} y1={c + r1 * Math.sin(a)} x2={c + r2 * Math.cos(a)} y2={c + r2 * Math.sin(a)} stroke={tier.glow} strokeWidth={sc(2)} strokeLinecap="round" opacity="0.85" />); }
+  if (lvl >= 4 && lvl <= 6) { // Platine/Diamant/Maître : petits rayons fins
+    const n = 12; for (let i = 0; i < n; i++) { const a = (Math.PI * 2 * i) / n - Math.PI / 2; const r1 = r - sc(3), r2 = r + sc(3);
+      deco.push(<line key={"ray" + i} x1={c + r1 * Math.cos(a)} y1={c + r1 * Math.sin(a)} x2={c + r2 * Math.cos(a)} y2={c + r2 * Math.sin(a)} stroke={tier.glow} strokeWidth={sc(1.4)} strokeLinecap="round" opacity="0.55" />); }
+  }
+  if (lvl >= 7) { // Élite/Mythique : grand soleil de pointes
+    const n = lvl === 8 ? 16 : 10;
+    for (let i = 0; i < n; i++) { const a = (Math.PI * 2 * i) / n - Math.PI / 2; const r1 = r - sc(6), r2 = r + sc(lvl === 8 ? 11 : 8), aw = 0.16;
+      deco.push(<polygon key={"sp" + i} points={`${c + r1 * Math.cos(a - aw)},${c + r1 * Math.sin(a - aw)} ${c + r2 * Math.cos(a)},${c + r2 * Math.sin(a)} ${c + r1 * Math.cos(a + aw)},${c + r1 * Math.sin(a + aw)}`} fill={tier.glow} opacity="0.9" />); }
   }
 
-  // forme centrale : hexagone (bas), bouclier cranté (milieu), emblème prédateur anguleux (haut)
+  // emblème central propre à chaque rang
   let core;
-  if (lvl <= 1) {
-    core = <polygon points={hexPoints(c, c, r - sc(6))} fill={`url(#${gid})`} stroke="rgba(255,255,255,.2)" strokeWidth={sc(1.5)} />;
-  } else if (lvl <= 4) {
-    core = <polygon points={starPoints(c, c, r - sc(5), r - sc(13), 6 + lvl)} fill={`url(#${gid})`} stroke="rgba(255,255,255,.28)" strokeWidth={sc(1.2)} />;
-  } else {
-    // emblème anguleux type "predator" : losange acéré + ailerons intégrés + pointe
-    const top = c - r + sc(4), bot = c + r - sc(4), w = r - sc(6);
-    core = (
-      <g stroke="rgba(255,255,255,.4)" strokeWidth={sc(1)} strokeLinejoin="round">
-        {/* ailerons latéraux qui prolongent le losange (menaçant) */}
-        <polygon points={`${c - w},${c} ${c - w - sc(7)},${c - sc(12)} ${c - w + sc(3)},${c - sc(2)} ${c - w - sc(4)},${c + sc(11)} ${c - w + sc(4)},${c + sc(3)}`} fill={tier.color} stroke="none" />
-        <polygon points={`${c + w},${c} ${c + w + sc(7)},${c - sc(12)} ${c + w - sc(3)},${c - sc(2)} ${c + w + sc(4)},${c + sc(11)} ${c + w - sc(4)},${c + sc(3)}`} fill={tier.color} stroke="none" />
-        {/* corps losange acéré (pointe haute allongée) */}
-        <polygon points={`${c},${top} ${c + w},${c - sc(3)} ${c + sc(6)},${bot} ${c - sc(6)},${bot} ${c - w},${c - sc(3)}`} fill={`url(#${gid})`} />
-        {/* facette intérieure sombre pour le relief */}
-        <polygon points={`${c},${top + sc(7)} ${c + w - sc(6)},${c - sc(3)} ${c},${c + sc(10)} ${c - w + sc(6)},${c - sc(3)}`} fill="rgba(0,0,0,.22)" stroke="none" />
-        {/* arête centrale brillante */}
-        <line x1={c} y1={top + sc(2)} x2={c} y2={bot - sc(2)} stroke={tier.glow} strokeWidth={sc(1.2)} opacity="0.7" />
-      </g>
-    );
+  const shieldPts = `${c},${c - r + sc(7)} ${c + r - sc(9)},${c - r + sc(15)} ${c + r - sc(13)},${c + sc(6)} ${c},${c + r - sc(7)} ${c - r + sc(13)},${c + sc(6)} ${c - r + sc(9)},${c - r + sc(15)}`;
+  if (lvl === 0) { // Fer — bouclier matte + rivets
+    core = (<g><polygon points={shieldPts} fill={fill} stroke="rgba(255,255,255,.18)" strokeWidth={sc(1.5)} />
+      {[[-1,-1],[1,-1],[-1,1],[1,1]].map(([dx,dy],i)=><circle key={i} cx={c+dx*sc(11)} cy={c+dy*sc(9)} r={sc(2)} fill="rgba(0,0,0,.3)" />)}</g>);
+  } else if (lvl === 1) { // Bronze — bouclier + 1 chevron
+    core = (<g><polygon points={shieldPts} fill={fill} stroke="rgba(255,255,255,.22)" strokeWidth={sc(1.5)} />
+      <polyline points={`${c - sc(12)},${c - sc(2)} ${c},${c + sc(8)} ${c + sc(12)},${c - sc(2)}`} fill="none" stroke={tier.glow} strokeWidth={sc(3)} strokeLinecap="round" strokeLinejoin="round" /></g>);
+  } else if (lvl === 2) { // Argent — hexagone + double chevron
+    core = (<g><polygon points={hexPoints(c, c, r - sc(7))} fill={fill} stroke="rgba(255,255,255,.28)" strokeWidth={sc(1.4)} />
+      <polyline points={`${c - sc(11)},${c - sc(5)} ${c},${c + sc(4)} ${c + sc(11)},${c - sc(5)}`} fill="none" stroke={tier.glow} strokeWidth={sc(2.6)} strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={`${c - sc(11)},${c + sc(3)} ${c},${c + sc(12)} ${c + sc(11)},${c + sc(3)}`} fill="none" stroke={tier.glow} strokeWidth={sc(2.6)} strokeLinecap="round" strokeLinejoin="round" opacity="0.7" /></g>);
+  } else if (lvl === 3) { // Or — étoile 5 branches
+    core = <polygon points={starPoints(c, c, r - sc(8), r - sc(20), 5)} fill={fill} stroke="rgba(255,255,255,.35)" strokeWidth={sc(1.4)} strokeLinejoin="round" />;
+  } else if (lvl === 4) { // Platine — gemme octogonale facettée
+    core = (<g><polygon points={starPoints(c, c, r - sc(9), r - sc(11), 8)} fill={fill} stroke="rgba(255,255,255,.32)" strokeWidth={sc(1.2)} strokeLinejoin="round" />
+      <polygon points={`${c},${c - r + sc(12)} ${c + r - sc(16)},${c} ${c},${c + r - sc(12)} ${c - r + sc(16)},${c}`} fill="rgba(255,255,255,.12)" stroke="none" /></g>);
+  } else if (lvl === 5) { // Diamant — taille brillant
+    const top = c - r + sc(12), tw = r - sc(14), gw = r - sc(22), bot = c + r - sc(8), tbl = c - sc(2);
+    core = (<g stroke="rgba(255,255,255,.4)" strokeWidth={sc(1)} strokeLinejoin="round">
+      <polygon points={`${c - gw},${top} ${c + gw},${top} ${c + tw},${tbl} ${c},${bot} ${c - tw},${tbl}`} fill={fill} />
+      <line x1={c - gw} y1={top} x2={c} y2={bot} stroke="rgba(255,255,255,.25)" />
+      <line x1={c + gw} y1={top} x2={c} y2={bot} stroke="rgba(255,255,255,.25)" />
+      <line x1={c - tw} y1={tbl} x2={c + tw} y2={tbl} stroke="rgba(255,255,255,.25)" /></g>);
+  } else if (lvl === 6) { // Maître — blason ailé
+    core = (<g stroke="rgba(255,255,255,.4)" strokeWidth={sc(1)} strokeLinejoin="round">
+      <polygon points={`${c - sc(10)},${c - sc(4)} ${c - r + sc(6)},${c - sc(14)} ${c - r + sc(10)},${c + sc(2)} ${c - sc(6)},${c + sc(6)}`} fill={tier.color} stroke="none" />
+      <polygon points={`${c + sc(10)},${c - sc(4)} ${c + r - sc(6)},${c - sc(14)} ${c + r - sc(10)},${c + sc(2)} ${c + sc(6)},${c + sc(6)}`} fill={tier.color} stroke="none" />
+      <polygon points={`${c},${c - r + sc(10)} ${c + sc(11)},${c - sc(2)} ${c},${c + r - sc(10)} ${c - sc(11)},${c - sc(2)}`} fill={fill} />
+      <line x1={c} y1={c - r + sc(13)} x2={c} y2={c + r - sc(13)} stroke={tier.glow} strokeWidth={sc(1.2)} opacity="0.7" /></g>);
+  } else if (lvl === 7) { // Élite — étoile acérée 4 branches
+    core = (<g><polygon points={starPoints(c, c, r - sc(6), r - sc(20), 4)} fill={fill} stroke="rgba(255,255,255,.4)" strokeWidth={sc(1.3)} strokeLinejoin="round" transform={`rotate(45 ${c} ${c})`} />
+      <polygon points={starPoints(c, c, r - sc(8), r - sc(18), 4)} fill={fill} stroke="rgba(255,255,255,.4)" strokeWidth={sc(1.3)} strokeLinejoin="round" /></g>);
+  } else { // Mythique — flamme couronnée
+    core = (<g stroke="rgba(255,255,255,.35)" strokeWidth={sc(1)} strokeLinejoin="round">
+      <path d={`M ${c} ${c - r + sc(8)} C ${c + r - sc(10)} ${c - sc(4)}, ${c + sc(8)} ${c + r - sc(8)}, ${c} ${c + r - sc(10)} C ${c - sc(8)} ${c + r - sc(8)}, ${c - r + sc(10)} ${c - sc(4)}, ${c} ${c - r + sc(8)} Z`} fill={fill} />
+      <path d={`M ${c} ${c - sc(4)} C ${c + sc(9)} ${c + sc(2)}, ${c + sc(3)} ${c + sc(16)}, ${c} ${c + r - sc(16)} C ${c - sc(3)} ${c + sc(16)}, ${c - sc(9)} ${c + sc(2)}, ${c} ${c - sc(4)} Z`} fill="rgba(0,0,0,.22)" stroke="none" /></g>);
   }
 
   return (
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: "visible" }}>
         <defs>
-          <radialGradient id={gid} cx="50%" cy="30%" r="75%"><stop offset="0%" stopColor={tier.glow} /><stop offset="65%" stopColor={tier.color} /><stop offset="100%" stopColor={tier.color} /></radialGradient>
+          <radialGradient id={gid} cx="50%" cy="28%" r="80%"><stop offset="0%" stopColor={tier.glow} /><stop offset="60%" stopColor={tier.color} /><stop offset="100%" stopColor={tier.color} /></radialGradient>
           {lvl >= 5 && <filter id={gid + "-g"} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation={sc(3)} result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>}
         </defs>
         {lvl >= 5 && <circle cx={c} cy={c} r={r - sc(2)} fill={tier.glow} opacity="0.16" filter={`url(#${gid}-g)`} />}
-        {spikes.length > 0 && <g filter={lvl >= 5 ? `url(#${gid}-g)` : undefined}>{spikes.map((p, i) => <polygon key={i} points={p} fill={tier.glow} opacity="0.9" />)}</g>}
-        {rays}
+        <g filter={lvl >= 7 ? `url(#${gid}-g)` : undefined}>{deco}</g>
         <g filter={lvl >= 7 ? `url(#${gid}-g)` : undefined}>{core}</g>
-        {lvl >= 3 && lvl < 5 && <polygon points={hexPoints(c, c, r - sc(14))} fill="none" stroke="rgba(255,255,255,.3)" strokeWidth={sc(0.8)} />}
       </svg>
-      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, textShadow: "0 1px 4px rgba(0,0,0,.6)", fontSize: size * (lvl >= 5 ? 0.28 : 0.34), lineHeight: 1 }}>
-        {tier.label[0]}<span style={{ fontSize: size * 0.16, fontWeight: 700, opacity: 0.95 }}>{sub}</span>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, textShadow: "0 1px 4px rgba(0,0,0,.7)", fontSize: size * (lvl >= 5 ? 0.27 : 0.33), lineHeight: 1, pointerEvents: "none" }}>
+        {tier.label[0]}<span style={{ fontSize: size * 0.15, fontWeight: 700, opacity: 0.95 }}>{sub}</span>
       </div>
     </div>
   );
