@@ -98,7 +98,9 @@ function scoreToRank(score) {
   const perTier = 1 / TIERS.length;
   const tierIdx = Math.floor(s / perTier);
   const within = (s - tierIdx * perTier) / perTier;
-  const sub = 3 - Math.floor(within * 3);
+  // Paliers : on entre dans un rang au niveau 1 (le plus faible) et on grimpe
+  // jusqu'au niveau 3 (le plus fort) avant de passer au rang supérieur.
+  const sub = 1 + Math.floor(within * 3);
   return { tier: TIERS[tierIdx], sub: Math.max(1, Math.min(3, sub)), within, tierIdx };
 }
 
@@ -2145,6 +2147,47 @@ function Toast({ msg }) { return msg ? <div style={S.toast}>{msg}</div> : null; 
 /* ============================== APP =================================== */
 
 /* ============================== APP =================================== */
+function SplashScreen({ onDone }) {
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    const t1 = setTimeout(() => setLeaving(true), 1950);   // commence le fondu
+    const t2 = setTimeout(() => onDone && onDone(), 2450);  // retire l'écran
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+  const skip = () => { setLeaving(true); setTimeout(() => onDone && onDone(), 320); };
+  return (
+    <div onClick={skip} role="button" aria-label="Passer"
+      style={{
+        position: "fixed", inset: 0, zIndex: 99999, cursor: "pointer",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16,
+        background: "radial-gradient(820px 560px at 50% 38%, #18233e 0%, #0c0f16 58%, #08090d 100%)",
+        opacity: leaving ? 0 : 1, transition: "opacity .42s ease",
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif", textAlign: "center", padding: 24,
+      }}>
+      <style>{`
+        @keyframes apxLogoIn { 0%{opacity:0;transform:translateY(16px) scale(.8)} 60%{opacity:1} 100%{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes apxFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+        @keyframes apxGlow { 0%,100%{filter:drop-shadow(0 0 8px rgba(110,150,255,.4))} 50%{filter:drop-shadow(0 0 26px rgba(110,150,255,.85))} }
+        @keyframes apxWord { 0%{opacity:0;letter-spacing:16px} 100%{opacity:1;letter-spacing:3px} }
+        @keyframes apxBar { 0%{width:0;opacity:0} 100%{width:130px;opacity:1} }
+        @keyframes apxTag { 0%{opacity:0;transform:translateY(8px)} 100%{opacity:1;transform:translateY(0)} }
+      `}</style>
+      <div style={{ animation: "apxLogoIn .8s cubic-bezier(.2,.85,.25,1) both" }}>
+        <img src={APEX_LOGO_IMG} alt="APEX" draggable={false}
+          style={{ width: 156, height: "auto", display: "block",
+            animation: "apxFloat 3s ease-in-out .8s infinite, apxGlow 2.6s ease-in-out .8s infinite" }} />
+      </div>
+      <div style={{ fontSize: 42, fontWeight: 900, color: "#fff", lineHeight: 1, animation: "apxWord .9s ease .3s both" }}>
+        <span style={{ color: "#e0245e" }}>A</span>PEX
+      </div>
+      <div style={{ height: 2, borderRadius: 2, background: "linear-gradient(90deg, transparent, #6e96ff, transparent)", animation: "apxBar .8s ease .65s both" }} />
+      <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: "#8fb0ff", animation: "apxTag .9s ease .95s both" }}>
+        Deviens ta légende
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [profile, setProfile] = useState(() => store.get(K.profile, null));
   const [onboarded, setOnboarded] = useState(() => store.get(K.onboarded, false));
@@ -2165,6 +2208,7 @@ export default function App() {
   const [celebration, setCelebration] = useState(null);
   const [toast, setToast] = useState("");
   const [account, setAccount] = useState(null);
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => { if (profile) store.set(K.profile, profile); }, [profile]);
   useEffect(() => { applyTheme(profile?.theme || "nuit"); }, [profile?.theme]);
@@ -2356,6 +2400,9 @@ export default function App() {
     flash(`${sessions.length} séances importées depuis Hevy ✓`); setTab("profil"); setProfilSub("historique");
   };
   const importRoutine = (r) => { setRoutines((prev) => [...prev, { ...r, id: uid() }]); flash("Séance importée ✓"); setTab("seances"); };
+
+  // -------- écran de lancement (animation) --------
+  if (showSplash) return <SplashScreen onDone={() => setShowSplash(false)} />;
 
   // -------- onboarding (1er lancement) --------
   if (!onboarded || !profile) {
@@ -3411,7 +3458,7 @@ function RanksTab({ muscleScores, bw }) {
       </section>
       <section style={S.card}>
         <div style={S.cardTitle}>Les 9 rangs à gravir</div>
-        <div style={{ fontSize: 12.5, opacity: 0.6, marginTop: 4, lineHeight: 1.5 }}>Chaque rang a 3 paliers (3 → 1). Du plus accessible au sommet réservé aux athlètes confirmés.</div>
+        <div style={{ fontSize: 12.5, opacity: 0.6, marginTop: 4, lineHeight: 1.5 }}>Chaque rang a 3 paliers (1 → 3, le 3 étant le plus fort). Du plus accessible au sommet réservé aux athlètes confirmés.</div>
         <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
           {[...TIERS].reverse().map((tr, i) => {
             const idx = TIERS.length - 1 - i;
