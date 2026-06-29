@@ -19,7 +19,7 @@ async function getSupabase() {
 
 /* ----------------------- SYNCHRO CLOUD (apex_data) -------------------- */
 // Clés localStorage synchronisées (doit rester aligné avec K + apex_measures).
-const SYNC_KEYS = ["apex_profile","apex_lifts","apex_routines","apex_history","apex_prs","apex_xp","apex_cardio","apex_onboarded","apex_measures"];
+const SYNC_KEYS = ["apex_profile","apex_lifts","apex_routines","apex_history","apex_prs","apex_xp","apex_cardio","apex_onboarded","apex_measures","apex_exphotos"];
 
 const LOCAL_TS_KEY = "apex_updated_at"; // horodatage (ms) de la dernière modif locale
 
@@ -71,6 +71,44 @@ const cloudSync = {
     return { ok: !error, error };
   },
 };
+
+/* Fusion NON destructive des données locales et cloud.
+   - Listes "journal" (séances créées, historique, cardio, mesures) : fusionnées par id/date,
+     donc une séance créée n'est JAMAIS supprimée par une synchro ou une mise à jour.
+   - Dictionnaires (lifts, prs, xp, photos) : union des clés, la version la plus récente l'emporte en cas de conflit.
+   - Profil : version la plus récente. */
+function unionBy(a, b, preferB) {
+  const map = new Map();
+  const keyOf = (x) => (x && (x.id != null ? x.id : (x.date != null ? x.date : null)));
+  const extra = [];
+  for (const side of [preferB ? a : b, preferB ? b : a]) {
+    if (!Array.isArray(side)) continue;
+    for (const x of side) { const k = keyOf(x); if (k != null) map.set(k, x); else if (x) extra.push(x); }
+  }
+  return [...map.values(), ...extra];
+}
+function mergeBundles(localB, cloudB, cloudNewer) {
+  localB = localB || {}; cloudB = cloudB || {};
+  const mergeObj = (lo, co) => {
+    const l = (lo && typeof lo === "object" && !Array.isArray(lo)) ? lo : {};
+    const c = (co && typeof co === "object" && !Array.isArray(co)) ? co : {};
+    return cloudNewer ? { ...l, ...c } : { ...c, ...l };
+  };
+  const out = {};
+  for (const k of SYNC_KEYS) {
+    const lv = localB[k], cv = cloudB[k];
+    if (k === "apex_routines" || k === "apex_history" || k === "apex_cardio" || k === "apex_measures") {
+      out[k] = unionBy(lv, cv, cloudNewer);
+    } else if (k === "apex_lifts" || k === "apex_prs" || k === "apex_xp" || k === "apex_exphotos") {
+      out[k] = mergeObj(lv, cv);
+    } else if (k === "apex_onboarded") {
+      out[k] = !!(lv || cv);
+    } else { // apex_profile : la plus récente
+      out[k] = cloudNewer ? (cv !== undefined ? cv : lv) : (lv !== undefined ? lv : cv);
+    }
+  }
+  return out;
+}
 
 /* =========================================================================
    APEX v3 — Liftoff-like physique tracker
@@ -1660,7 +1698,7 @@ const store = {
   get(k, fb) { try { const v = window.localStorage.getItem(k); return v ? JSON.parse(v) : (mem[k] ?? fb); } catch { return mem[k] ?? fb; } },
   set(k, val) { mem[k] = val; try { window.localStorage.setItem(k, JSON.stringify(val)); } catch {} },
 };
-const K = { profile: "apex_profile", lifts: "apex_lifts", routines: "apex_routines", history: "apex_history", prs: "apex_prs", xp: "apex_xp", cardio: "apex_cardio", onboarded: "apex_onboarded" };
+const K = { profile: "apex_profile", lifts: "apex_lifts", routines: "apex_routines", history: "apex_history", prs: "apex_prs", xp: "apex_xp", cardio: "apex_cardio", onboarded: "apex_onboarded", exphotos: "apex_exphotos" };
 
 /* ----------------------------- UI BITS -------------------------------- */
 function hexPoints(cx, cy, r) {
@@ -1683,6 +1721,38 @@ const MUSCLE_REGIONS = {
   fessiers:[[22,34,"M16,31 q6,4 12,0 v4 q-6,4 -12,0 z"]],
   mollets: [[17,53,"M16,49 q-2,5 0,8 z"],[27,53,"M28,49 q2,5 0,8 z"]],
 };
+// Vignette d'exercice : photo perso (image de profil) ou, à défaut, l'icône muscle.
+// Si editable, on peut toucher pour prendre/choisir une photo (caméra ou galerie sur mobile).
+function ExoThumb({ exKey, photo, size = 44, editable = false, onPhoto }) {
+  const inputRef = useRef(null);
+  const meta = EX_BY_KEY[exKey];
+  const pick = async (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    try { const url = await readImageCompressed(f, 480, 0.72); onPhoto && onPhoto(exKey, url); } catch {}
+  };
+  return (
+    <div onClick={editable ? () => inputRef.current && inputRef.current.click() : undefined}
+         title={editable ? "Ajouter / changer la photo" : undefined}
+         style={{ position: "relative", width: size, height: size, flexShrink: 0, cursor: editable ? "pointer" : "default", lineHeight: 0 }}>
+      {photo ? (
+        <div style={{ width: size, height: size, borderRadius: 12, overflow: "hidden", background: "#1c2230" }}>
+          <img src={photo} alt={meta?.name || ""} draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        </div>
+      ) : (
+        <MuscleIcon muscles={meta?.muscles} size={size} />
+      )}
+      {editable && (
+        <span style={{ position: "absolute", right: -4, bottom: -4, width: Math.max(16, size * 0.42), height: Math.max(16, size * 0.42),
+                       borderRadius: "50%", background: "#e0245e", border: "2px solid #0d1015",
+                       display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.max(9, size * 0.22), lineHeight: 1 }}>📷</span>
+      )}
+      {editable && <input ref={inputRef} type="file" accept="image/*" onChange={pick} style={{ display: "none" }} />}
+    </div>
+  );
+}
+
 function MuscleIcon({ muscles, size = 44, color = "#ff5c8a" }) {
   const primary = Object.entries(muscles || {}).sort((a, b) => b[1] - a[1])[0]?.[0];
   return (
@@ -2237,7 +2307,13 @@ export default function App() {
   // xp: { muscleKey: { xp, lastTs } }
   const [xpRaw, setXpRaw] = useState(() => store.get(K.xp, {}));
   const [editingRoutine, setEditingRoutine] = useState(null);
-  const [liveSession, setLiveSession] = useState(null);
+  // Séance en cours, persistée localement : { routine, data, startedAt, pinned }.
+  // Elle survit à une fermeture/rechargement de la page ; on ne l'efface qu'à l'enregistrement ou à l'abandon.
+  const [live, setLive] = useState(() => store.get("apex_live", null));
+  const [liveOpen, setLiveOpen] = useState(() => !!store.get("apex_live", null));
+  // Photos d'exercices (image de profil) : { [exKey]: dataUrl }
+  const [exPhotos, setExPhotos] = useState(() => store.get(K.exphotos, {}));
+  const setExPhoto = (exKey, dataUrl) => setExPhotos((p) => { const n = { ...p }; if (dataUrl) n[exKey] = dataUrl; else delete n[exKey]; return n; });
   const [focusSessionId, setFocusSessionId] = useState(null);
   const goToSession = (id) => { setFocusSessionId(id); setProfilSub("historique"); setTab("profil"); };
   const [celebration, setCelebration] = useState(null);
@@ -2254,6 +2330,18 @@ export default function App() {
   useEffect(() => store.set(K.history, history), [history]);
   useEffect(() => store.set(K.cardio, cardio), [cardio]);
   useEffect(() => store.set(K.xp, xpRaw), [xpRaw]);
+  useEffect(() => store.set(K.exphotos, exPhotos), [exPhotos]);
+  useEffect(() => { store.set("apex_live", live); }, [live]);
+
+  // Demande au navigateur de CONSERVER les données du site (évite l'effacement automatique,
+  // notamment sur mobile/iOS). Les séances créées restent donc enregistrées entre les mises à jour.
+  useEffect(() => {
+    try {
+      if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persisted().then((p) => { if (!p) navigator.storage.persist().catch(() => {}); }).catch(() => {});
+      }
+    } catch {}
+  }, []);
 
   /* --------- SYNCHRO CLOUD : tire à la connexion, pousse aux changements --------- */
   const syncReady = useRef(false);
@@ -2289,9 +2377,18 @@ export default function App() {
         // Local vide, cloud plein -> on adopte le cloud
         if (adoptCloud()) return;
       } else {
-        // Les deux ont des données -> le plus récent gagne
-        if (res.updatedAt > localTs) { if (adoptCloud()) return; }
-        else await cloudSync.push(client, account.id);
+        // Les deux ont des données -> FUSION non destructive (aucune séance créée n'est perdue)
+        const cloudNewer = res.updatedAt > localTs;
+        const merged = mergeBundles(readLocalBundle(), res.data, cloudNewer);
+        const changed = writeLocalBundle(merged);
+        setLocalTs(Date.now()); // le local contient désormais la fusion (la version la plus complète)
+        if (changed && !sessionStorage.getItem("apex_synced_once")) {
+          sessionStorage.setItem("apex_synced_once", "1");
+          window.location.reload();
+          return;
+        }
+        // pousse la fusion vers le cloud pour que les deux côtés convergent
+        await cloudSync.push(client, account.id);
       }
       syncReady.current = true;
     })();
@@ -2405,7 +2502,7 @@ export default function App() {
       let best = 0; se.sets.forEach((set) => { const e = ex.isTime ? Number(set.secs) || 0 : estimate1RM(set.weight, set.reps); if (e > best) best = e; });
       if (best > 0) { const rec = newLifts[ex.key] || { history: [] }; newLifts[ex.key] = { best1RM: Math.max(best, rec.best1RM || 0), history: rec.history || [] }; } });
     setLifts(newLifts);
-    setLiveSession(null);
+    setLive(null); setLiveOpen(false);
 
     // état APRÈS (recalculé sur les nouvelles données)
     const afterXpData = computeXpFromHistory(newHistory, bw);
@@ -2492,6 +2589,16 @@ export default function App() {
         ))}
       </nav>
 
+      {live && !liveOpen && (
+        <button onClick={() => setLiveOpen(true)} style={S.resumeBar}>
+          <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 16 }}>▶︎</span>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Reprendre la séance « {live.routine?.name || "Séance"} »</span>
+          </span>
+          <span style={{ fontSize: 11, opacity: 0.85, flexShrink: 0, fontWeight: 700 }}>EN COURS</span>
+        </button>
+      )}
+
       <main style={S.main}>
         {tab === "profil" && <Profil sub={profilSub} setSub={setProfilSub}
           overall={overall} muscleScores={muscleScores} loggedCount={loggedCount} history={history} cardio={cardio}
@@ -2500,17 +2607,17 @@ export default function App() {
           focusSessionId={focusSessionId} onFocusHandled={() => setFocusSessionId(null)}
           dataTabProps={{ profile, routines, lifts, prs, history, cardio, xp: xpRaw, onImportBackup: importBackup, onImportHevy: importHevy, onImportRoutine: importRoutine, flash,
             onClearHistory: () => setHistory([]), onDeleteSession: (id) => setHistory((p) => p.filter((s) => s.id !== id)), onUpdateSession: (id, upd) => setHistory((p) => p.map((s) => s.id === id ? { ...s, ...upd } : s)) }} />}
-        {tab === "exos" && <ExoByMuscle lifts={lifts} prs={prs} bw={bw} setBestLift={setBestLift} setPR={setPR} progressionFor={progressionFor} exoCount={exoCount} weightHistoryFor={weightHistoryFor} onGoToSession={goToSession} flash={flash} />}
+        {tab === "exos" && <ExoByMuscle lifts={lifts} prs={prs} bw={bw} setBestLift={setBestLift} setPR={setPR} progressionFor={progressionFor} exoCount={exoCount} weightHistoryFor={weightHistoryFor} onGoToSession={goToSession} flash={flash} exPhotos={exPhotos} onSetPhoto={setExPhoto} />}
         {tab === "seances" && (editingRoutine
-          ? <RoutineEditor routine={editingRoutine} onSave={saveRoutine} onCancel={() => setEditingRoutine(null)} />
+          ? <RoutineEditor routine={editingRoutine} onSave={saveRoutine} onCancel={() => setEditingRoutine(null)} exPhotos={exPhotos} onSetPhoto={setExPhoto} />
           : <SeancesHub sub={seancesSub} setSub={setSeancesSub} routines={routines} history={history}
               onNew={() => setEditingRoutine({ id: uid(), name: "", exercises: [] })} onEdit={setEditingRoutine} onDelete={deleteRoutine}
-              onStart={(r) => setLiveSession(r)} onExport={(r) => exportRoutine(r, flash)} onAddPreset={addPreset}
+              onStart={(r) => { setLive({ routine: r, data: null, startedAt: Date.now(), pinned: {} }); setLiveOpen(true); }} onExport={(r) => exportRoutine(r, flash)} onAddPreset={addPreset}
               cardio={cardio} bw={bw} onAddCardio={addCardio} onClearCardio={() => setCardio([])} />)}
         {tab === "nutrition" && <Nutrition profile={profile} setProfile={setProfile} />}
       </main>
 
-      {liveSession && <SessionLogger routine={liveSession} lastSessionSets={lastSessionSets} prs={prs} muscleScores={muscleScores} onFinish={completeSession} onCancel={() => setLiveSession(null)} />}
+      {live && liveOpen && <SessionLogger session={live} onChange={(patch) => setLive((c) => c ? { ...c, ...patch } : c)} lastSessionSets={lastSessionSets} prs={prs} muscleScores={muscleScores} exPhotos={exPhotos} onSetPhoto={setExPhoto} onFinish={completeSession} onCancel={() => { setLive(null); setLiveOpen(false); }} onMinimize={() => setLiveOpen(false)} />}
       {celebration && <Celebration data={celebration} onClose={() => { setCelebration(null); setTab("profil"); setProfilSub("historique"); }} />}
       <footer style={S.footer}>Données sur ton appareil. Pense à exporter une sauvegarde (onglet Données).</footer>
     </div>
@@ -3569,7 +3676,7 @@ function Radar({ scores }) {
 }
 
 /* ---------------------------- MUSCLES --------------------------------- */
-function ExoByMuscle({ lifts, prs, bw, setBestLift, setPR, progressionFor, exoCount, weightHistoryFor, onGoToSession, flash }) {
+function ExoByMuscle({ lifts, prs, bw, setBestLift, setPR, progressionFor, exoCount, weightHistoryFor, onGoToSession, flash, exPhotos, onSetPhoto }) {
   const [openMuscle, setOpenMuscle] = useState(MUSCLES[0].key);
   const [openExo, setOpenExo] = useState(null);
   const [search, setSearch] = useState("");
@@ -3596,7 +3703,7 @@ function ExoByMuscle({ lifts, prs, bw, setBestLift, setPR, progressionFor, exoCo
     return (
       <div key={ex.key} style={S.exoInner}>
         <div onClick={() => setOpenExo(isOpen ? null : ex.key)} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-          <MuscleIcon muscles={ex.muscles} size={44} />
+          <ExoThumb exKey={ex.key} photo={exPhotos && exPhotos[ex.key]} size={44} editable onPhoto={onSetPhoto} />
           <div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 14 }}>{ex.name}{ex.perHand ? <span style={{ fontSize: 11, opacity: 0.5, fontWeight: 500 }}> /main</span> : null}</div>
             <div style={{ fontSize: 12, opacity: 0.55 }}>{rec?.best1RM ? (ex.isTime ? `Record : ${rec.best1RM}s` : `1RM estimé : ${rec.best1RM} kg`) : (ex.equipment ? ex.equipment : "Aucune donnée")}{prs[ex.key] ? ` · PR ${prs[ex.key]}kg` : ""}{exoCount(ex.key) > 0 ? ` · fait ${exoCount(ex.key)}×` : ""}</div></div>
           {rec?.best1RM ? <RankBadge score={score} size={36} /> : <span style={{ fontSize: 12, color: "#e0245e", fontWeight: 600 }}>+ Ajouter</span>}
@@ -3805,7 +3912,7 @@ function Seances({ routines, history, onNew, onEdit, onDelete, onStart, onExport
 }
 
 /* ------------------------- ROUTINE EDITOR ----------------------------- */
-function RoutineEditor({ routine, onSave, onCancel }) {
+function RoutineEditor({ routine, onSave, onCancel, exPhotos, onSetPhoto }) {
   const [name, setName] = useState(routine.name || "");
   const [exercises, setExercises] = useState(routine.exercises || []);
   const [picker, setPicker] = useState(false);
@@ -3828,7 +3935,7 @@ function RoutineEditor({ routine, onSave, onCancel }) {
         {!picker && exercises.map((e) => { const ex = EX_BY_KEY[e.key];
           return (
             <div key={e.key} style={{ ...S.exoInner, marginTop: 8 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}><MuscleIcon muscles={ex.muscles} size={32} />
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}><ExoThumb exKey={e.key} photo={exPhotos && exPhotos[e.key]} size={36} editable onPhoto={onSetPhoto} />
                 <div style={{ flex: 1, fontWeight: 700, fontSize: 14 }}>{ex.name}</div>
                 <button style={{ ...S.btnGhost, color: "#ff6b6b", padding: "4px 10px" }} onClick={() => toggle(e.key)}>×</button></div>
               <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
@@ -3893,19 +4000,23 @@ function MiniNum({ label, value, onChange, step = 1 }) {
   );
 }
 
-function SessionLogger({ routine, lastSessionSets, prs, muscleScores, onFinish, onCancel }) {
+function SessionLogger({ session, onChange, lastSessionSets, prs, muscleScores, exPhotos, onSetPhoto, onFinish, onCancel, onMinimize }) {
+  const routine = session.routine;
   const [elapsed, setElapsed] = useState(0);            // chrono séance
   const [rest, setRest] = useState(0);                  // chrono repos restant
   const [restTotal, setRestTotal] = useState(0);
-  const startRef = useRef(Date.now());
+  const startRef = useRef(session.startedAt || Date.now());
   const [data, setData] = useState(() =>
-    routine.exercises.map((e) => {
+    session.data || routine.exercises.map((e) => {
       const ex = EX_BY_KEY[e.key];
       return { key: e.key, rest: e.rest || 90, note: "", sets: Array.from({ length: e.sets || 3 }, () => (ex.isTime ? { secs: "", done: false } : { weight: "", reps: String(e.targetReps || ""), done: false })) };
     })
   );
   const [openYt, setOpenYt] = useState({});   // { [exKey]: bool } lecteur vidéo ouvert
-  const [pinned, setPinned] = useState({});   // { [exKey]: bool } priorité manuelle (override)
+  const [pinned, setPinned] = useState(session.pinned || {});   // { [exKey]: bool } priorité manuelle (override)
+
+  // Sauvegarde continue de la séance en cours (survit à la fermeture de la page).
+  useEffect(() => { onChange && onChange({ data, startedAt: startRef.current, pinned }); }, [data, pinned]);
 
   // --- Priorité automatique : muscles en retard (sous la moyenne) = à travailler en priorité ---
   const laggingMuscles = useMemo(() => {
@@ -3974,6 +4085,11 @@ function SessionLogger({ routine, lastSessionSets, prs, muscleScores, onFinish, 
   return (
     <div style={S.overlay}>
       <div style={S.sheet}>
+        {/* réduire (garde la séance ouverte en arrière-plan) */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <button style={S.btnGhost} onClick={onMinimize}>⌄ Réduire</button>
+          <span style={{ fontSize: 10.5, opacity: 0.55, textAlign: "right", lineHeight: 1.3 }}>Séance gardée même si tu fermes l'app</span>
+        </div>
         {/* barre chrono fixe */}
         <div style={S.chronoBar}>
           <div><div style={{ fontSize: 10, opacity: 0.5, textTransform: "uppercase", letterSpacing: 1 }}>Durée séance</div>
@@ -3987,7 +4103,7 @@ function SessionLogger({ routine, lastSessionSets, prs, muscleScores, onFinish, 
                 <button style={S.restMini} onClick={() => setRest(0)}>skip</button>
               </div>
             </div>
-          ) : <button style={S.btnGhost} onClick={onCancel}>Quitter</button>}
+          ) : <span style={{ width: 1 }} />}
         </div>
 
         {/* barre de progression du repos */}
@@ -4028,7 +4144,7 @@ function SessionLogger({ routine, lastSessionSets, prs, muscleScores, onFinish, 
                     <button style={{ ...S.moveBtn, opacity: ei === 0 ? 0.3 : 1 }} disabled={ei === 0} onClick={() => move(ei, -1)}>▲</button>
                     <button style={{ ...S.moveBtn, opacity: ei === data.length - 1 ? 0.3 : 1 }} disabled={ei === data.length - 1} onClick={() => move(ei, 1)}>▼</button>
                   </div>
-                  <div style={S.exoIcon}>{meta.icon}</div>
+                  <ExoThumb exKey={ex.key} photo={exPhotos && exPhotos[ex.key]} size={44} editable onPhoto={onSetPhoto} />
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ fontWeight: 700 }}>{meta.name}</span>
@@ -4089,6 +4205,10 @@ function SessionLogger({ routine, lastSessionSets, prs, muscleScores, onFinish, 
         <button style={{ ...S.btnPrimary, width: "100%", padding: 15, marginTop: 16, fontSize: 15 }}
           onClick={() => onFinish({ routineId: routine.id, name: routine.name, durationSec: elapsed, exercises: data.map((ex) => ({ key: ex.key, note: ex.note || "", sets: ex.sets.map(({ done, ...rest }) => rest) })) })}>
           ✓ Terminer la séance ({fmtTime(elapsed)})
+        </button>
+        <button style={{ ...S.btnGhost, width: "100%", padding: 12, marginTop: 8, color: "#ff6b6b" }}
+          onClick={() => { if (confirm("Abandonner cette séance ? Ta progression en cours sera perdue.")) onCancel(); }}>
+          Abandonner la séance
         </button>
       </div>
     </div>
@@ -4439,6 +4559,7 @@ const S = {
   tab: { flexShrink: 0, padding: "8px 14px", borderRadius: 99, border: "none", background: "transparent", color: "#8a92a0", fontSize: 13.5, fontWeight: 600, cursor: "pointer", transition: ".2s", whiteSpace: "nowrap" },
   tabActive: { background: "var(--accent,#e0245e)", color: "#fff" },
   main: { flex: 1, padding: "8px 14px 24px" },
+  resumeBar: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, width: "calc(100% - 28px)", margin: "0 14px 8px", padding: "11px 14px", borderRadius: 12, border: "1px solid #3a6d4e", background: "linear-gradient(90deg, rgba(46,160,90,0.22), rgba(46,160,90,0.10))", color: "#eafff1", fontWeight: 700, fontSize: 13.5, cursor: "pointer", textAlign: "left", animation: "fadeIn .3s" },
   footer: { padding: "16px 18px 28px", fontSize: 11, opacity: 0.35, lineHeight: 1.5, textAlign: "center" },
   card: { background: "var(--card,#141921)", border: "1px solid var(--card-border,#1f2530)", borderRadius: 16, padding: 18 },
   heroCard: { background: "linear-gradient(135deg, #1a1f2b 0%, #141921 60%)", border: "1px solid #2a3140" },
