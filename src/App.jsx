@@ -19,7 +19,7 @@ async function getSupabase() {
 
 /* ----------------------- SYNCHRO CLOUD (apex_data) -------------------- */
 // Clés localStorage synchronisées (doit rester aligné avec K + apex_measures).
-const SYNC_KEYS = ["apex_profile","apex_lifts","apex_routines","apex_history","apex_prs","apex_xp","apex_cardio","apex_onboarded","apex_measures","apex_exphotos"];
+const SYNC_KEYS = ["apex_profile","apex_lifts","apex_routines","apex_history","apex_prs","apex_xp","apex_cardio","apex_onboarded","apex_measures","apex_exphotos","apex_exvids"];
 
 const LOCAL_TS_KEY = "apex_updated_at"; // horodatage (ms) de la dernière modif locale
 
@@ -99,7 +99,7 @@ function mergeBundles(localB, cloudB, cloudNewer) {
     const lv = localB[k], cv = cloudB[k];
     if (k === "apex_routines" || k === "apex_history" || k === "apex_cardio" || k === "apex_measures") {
       out[k] = unionBy(lv, cv, cloudNewer);
-    } else if (k === "apex_lifts" || k === "apex_prs" || k === "apex_xp" || k === "apex_exphotos") {
+    } else if (k === "apex_lifts" || k === "apex_prs" || k === "apex_xp" || k === "apex_exphotos" || k === "apex_exvids") {
       out[k] = mergeObj(lv, cv);
     } else if (k === "apex_onboarded") {
       out[k] = !!(lv || cv);
@@ -151,6 +151,88 @@ const MUSCLES = [
   { key: "abdos", label: "Abdominaux" }, { key: "mollets", label: "Mollets" },
 ];
 const muscleLabel = (k) => MUSCLES.find((m) => m.key === k)?.label || k;
+
+/* ------------------- ZONES MUSCULAIRES PRÉCISES ------------------------ */
+/* Pour chaque exercice principal : la ou les portions exactes du muscle
+   travaillées (anatomie). Affiché pendant la séance et dans les fiches. */
+const ZONES = {
+  // Pectoraux
+  bench:      "Grand pectoral (faisceau sternal) · triceps chef latéral · deltoïde antérieur",
+  bench_db:   "Grand pectoral (faisceau sternal) · plus grande amplitude d'étirement",
+  incline:    "Grand pectoral — faisceau claviculaire (haut des pecs) · deltoïde antérieur",
+  incline_db: "Grand pectoral — faisceau claviculaire (haut des pecs)",
+  fly:        "Grand pectoral — faisceau sternal (isolation, étirement maximal)",
+  pushup:     "Grand pectoral (sternal) · triceps · deltoïde antérieur · gainage",
+  // Dos
+  deadlift:   "Érecteurs du rachis · grand dorsal (isométrie) · trapèzes · chaîne postérieure",
+  rdl:        "Ischio-jambiers (chef long du biceps fémoral, semi-tendineux) · grand fessier",
+  pullup:     "Grand dorsal (fibres externes, largeur) · grand rond · biceps",
+  chinup:     "Grand dorsal (fibres basses) · biceps brachial (fort recrutement)",
+  latpull:    "Grand dorsal (fibres externes, largeur) · grand rond",
+  row:        "Grand dorsal (épaisseur) · trapèzes moyens · rhomboïdes",
+  row_db:     "Grand dorsal (épaisseur, unilatéral) · trapèzes moyens · rhomboïdes",
+  row_cable:  "Grand dorsal (fibres médianes) · rhomboïdes · trapèzes moyens",
+  facepull:   "Deltoïde postérieur · trapèzes moyens/inférieurs · rotateurs externes",
+  shrug:      "Trapèzes supérieurs (élévation scapulaire)",
+  // Épaules
+  ohp:        "Deltoïde antérieur & moyen · triceps chef long · trapèzes supérieurs",
+  ohp_db:     "Deltoïde antérieur & moyen (stabilisation accrue)",
+  latraise:   "Deltoïde moyen (isolation pure — largeur d'épaules)",
+  reardelt:   "Deltoïde postérieur (isolation) · trapèzes moyens",
+  // Biceps
+  curl:       "Biceps brachial — chef court & long (supination complète)",
+  curl_db:    "Biceps brachial — les deux chefs · rotation en supination",
+  hammer:     "Brachial antérieur · long supinateur (épaisseur du bras) · biceps",
+  preacher:   "Biceps brachial — chef court (pic du biceps, position raccourcie)",
+  // Triceps
+  dips:       "Triceps — chef latéral & médial · pectoral inférieur",
+  triext:     "Triceps — chef latéral & médial (coudes le long du corps)",
+  skullcrusher: "Triceps — chef long & latéral (étirement au-dessus de la tête)",
+  overhead_tri: "Triceps — chef long (étirement maximal, bras au-dessus de la tête)",
+  // Quadriceps
+  squat:      "Quadriceps (vaste latéral, droit fémoral) · grand fessier · adducteurs",
+  frontsquat: "Quadriceps — vaste médial & droit fémoral (buste vertical)",
+  legpress:   "Quadriceps (vastes) · grand fessier — selon position des pieds",
+  lunge:      "Quadriceps · grand fessier (unilatéral) · moyen fessier (stabilité)",
+  legext:     "Quadriceps — droit fémoral & vastes (isolation pure)",
+  hacksquat:  "Quadriceps — vaste latéral & médial (dos plaqué)",
+  // Ischios
+  legcurl:    "Ischio-jambiers — biceps fémoral chef court (flexion du genou)",
+  legcurl_seated: "Ischio-jambiers — semi-tendineux & semi-membraneux (hanche fléchie)",
+  // Fessiers
+  hipthrust:  "Grand fessier (extension de hanche, contraction maximale en haut)",
+  gluteridge: "Grand fessier (extension de hanche au sol)",
+  abduction:  "Moyen & petit fessiers (abduction de hanche)",
+  // Abdos
+  plank:      "Transverse de l'abdomen · grand droit (gainage isométrique)",
+  legraise:   "Grand droit — portion inférieure · fléchisseurs de hanche",
+  crunch:     "Grand droit — portion supérieure (flexion du tronc)",
+  // Mollets
+  calf:       "Gastrocnémiens (jambes tendues — galbe du mollet)",
+  calf_seated: "Soléaire (genoux fléchis — épaisseur du mollet)",
+  calf_lecalfgpress: "Gastrocnémiens & soléaire (grande amplitude à la presse)",
+};
+/* Repli générique par muscle si l'exercice n'a pas de zone détaillée. */
+const ZONE_FALLBACK = {
+  pecs: "Grand pectoral", dos: "Grand dorsal · trapèzes · rhomboïdes",
+  epaules: "Deltoïdes (antérieur / moyen / postérieur)", biceps: "Biceps brachial · brachial antérieur",
+  triceps: "Triceps (chef long / latéral / médial)", quads: "Quadriceps (vastes · droit fémoral)",
+  ischios: "Ischio-jambiers (biceps fémoral · semi-tendineux)", fessiers: "Grand / moyen fessiers",
+  abdos: "Grand droit · obliques · transverse", mollets: "Gastrocnémiens · soléaire",
+};
+const zoneOf = (exKey) => ZONES[exKey] || ZONE_FALLBACK[EX_BY_KEY?.[exKey]?.primary] || null;
+
+/* ---------------------- HELPERS VIDÉO YOUTUBE ------------------------- */
+// Extrait l'ID vidéo depuis n'importe quel format d'URL YouTube (watch, youtu.be, shorts, embed).
+function parseYtId(url) {
+  if (!url) return null;
+  const s = String(url).trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s; // ID brut
+  const m = s.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+const ytEmbed = (id) => `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1`;
+const ytWatch = (id) => `https://www.youtube.com/watch?v=${id}`;
 
 /* -------------------------- EXERCISES --------------------------------- */
 /* eliteRatio RELEVÉ (rangs plus durs) : la barre du sommet (Mythique) est
@@ -1527,7 +1609,8 @@ function cardioStats(typeKey, distanceVal, minutes, bw) {
 /* -------------------------- NUTRITION --------------------------------- */
 /* ============================ THÈMES ================================= */
 const THEMES = {
-  nuit:    { label: "Nuit (défaut)", bg: "#0d1015", card: "#141921", accent: "#e0245e", accentGlow: "#ff5c8a" },
+  perle:   { label: "🤍 Perle (défaut)", bg: "#f5f6fa", card: "#ffffff", accent: "#e0245e", accentGlow: "#c81d51", light: true, grad: "linear-gradient(180deg, #fafbfe 0%, #eef0f6 100%)" },
+  nuit:    { label: "Nuit", bg: "#0d1015", card: "#141921", accent: "#e0245e", accentGlow: "#ff5c8a" },
   abysse:  { label: "Abysse", bg: "#0a0f1a", card: "#111a2b", accent: "#2f7bff", accentGlow: "#7ea8ff" },
   foret:   { label: "Forêt", bg: "#0b130f", card: "#121f17", accent: "#27a34a", accentGlow: "#5ce087" },
   braise:  { label: "Braise", bg: "#140b0a", card: "#1f1310", accent: "#ff6a1a", accentGlow: "#ffb55c" },
@@ -1547,16 +1630,36 @@ const THEMES = {
   menthe:  { label: "🌿 Menthe claire", bg: "#eef6f0", card: "#ffffff", accent: "#1f9e6a", accentGlow: "#46c994", light: true },
 };
 function applyTheme(key) {
-  const t = THEMES[key] || THEMES.nuit;
+  const t = THEMES[key] || THEMES.perle;
   const root = document.documentElement.style;
   root.setProperty("--bg", t.bg);
   root.setProperty("--card", t.card);
   root.setProperty("--accent", t.accent);
   root.setProperty("--accent-glow", t.accentGlow);
-  root.setProperty("--text", t.light ? "#1a1f28" : "#e8ecf2");
-  root.setProperty("--card-border", t.light ? "#e2e6ee" : "#1f2530");
-  root.setProperty("--inner", t.light ? "#f6f8fb" : "#10151d");
+  root.setProperty("--text", t.light ? "#1c2230" : "#e8ecf2");
+  root.setProperty("--card-border", t.light ? "#e4e7ef" : "#1f2530");
+  root.setProperty("--inner", t.light ? "#f4f6fa" : "#10151d");
+  // Variables étendues (permettent aux thèmes clairs d'être VRAIMENT clairs partout)
+  root.setProperty("--border", t.light ? "#d8dce6" : "#2a313d");       // bordures inputs/boutons
+  root.setProperty("--field", t.light ? "#ffffff" : "#0e1218");        // fond des champs
+  root.setProperty("--ghost", t.light ? "#eceef5" : "#1c2230");        // boutons secondaires / chips
+  root.setProperty("--muted", t.light ? "#5a6272" : "#cdd4de");        // texte secondaire
+  root.setProperty("--muted-2", t.light ? "#8a92a4" : "#8a92a0");      // texte tertiaire (onglets)
+  root.setProperty("--shadow", t.light ? "0 1px 3px rgba(20,26,40,.08), 0 6px 18px rgba(20,26,40,.06)" : "none");
+  root.setProperty("--header-grad", t.light
+    ? `linear-gradient(180deg, ${t.bg} 70%, rgba(245,246,250,0))`
+    : `linear-gradient(180deg, ${t.bg} 70%, rgba(13,16,21,0))`);
+  root.setProperty("--sheet", t.light ? "#fafbfe" : "#0d1015");        // fond du panneau de séance
+  // couleurs sémantiques (validation, record, priorité) lisibles en clair comme en sombre
+  root.setProperty("--ok-bg", t.light ? "rgba(38,150,88,.10)" : "#10201a");
+  root.setProperty("--ok-text", t.light ? "#1d7a4a" : "#8fe0b0");
+  root.setProperty("--ok-border", t.light ? "#bfe3cf" : "#1d3b2c");
+  root.setProperty("--pr-bg", t.light ? "rgba(201,162,39,.12)" : "#1f1c10");
+  root.setProperty("--pri-bg", t.light ? "rgba(232,177,58,.12)" : "#1f1c10");
+  root.setProperty("--pri-text", t.light ? "#8a6a10" : "#f4d03f");
+  root.setProperty("--pri-border", t.light ? "#e4cf94" : "#5a4a1a");
   try { document.body.style.background = t.grad || t.bg; } catch {}
+  try { document.querySelector('meta[name="theme-color"]')?.setAttribute("content", t.bg); } catch {}
 }
 
 // Lit un fichier image et renvoie un data URL compressé (pour le fond d'écran perso).
@@ -1698,7 +1801,7 @@ const store = {
   get(k, fb) { try { const v = window.localStorage.getItem(k); return v ? JSON.parse(v) : (mem[k] ?? fb); } catch { return mem[k] ?? fb; } },
   set(k, val) { mem[k] = val; try { window.localStorage.setItem(k, JSON.stringify(val)); } catch {} },
 };
-const K = { profile: "apex_profile", lifts: "apex_lifts", routines: "apex_routines", history: "apex_history", prs: "apex_prs", xp: "apex_xp", cardio: "apex_cardio", onboarded: "apex_onboarded", exphotos: "apex_exphotos" };
+const K = { profile: "apex_profile", lifts: "apex_lifts", routines: "apex_routines", history: "apex_history", prs: "apex_prs", xp: "apex_xp", cardio: "apex_cardio", onboarded: "apex_onboarded", exphotos: "apex_exphotos", exvids: "apex_exvids" };
 
 /* ----------------------------- UI BITS -------------------------------- */
 function hexPoints(cx, cy, r) {
@@ -2314,6 +2417,9 @@ export default function App() {
   // Photos d'exercices (image de profil) : { [exKey]: dataUrl }
   const [exPhotos, setExPhotos] = useState(() => store.get(K.exphotos, {}));
   const setExPhoto = (exKey, dataUrl) => setExPhotos((p) => { const n = { ...p }; if (dataUrl) n[exKey] = dataUrl; else delete n[exKey]; return n; });
+  // Vidéos YouTube personnalisées par exercice : { [exKey]: videoId }
+  const [exVids, setExVids] = useState(() => store.get(K.exvids, {}));
+  const setExVid = (exKey, videoId) => setExVids((p) => { const n = { ...p }; if (videoId) n[exKey] = videoId; else delete n[exKey]; return n; });
   const [focusSessionId, setFocusSessionId] = useState(null);
   const goToSession = (id) => { setFocusSessionId(id); setProfilSub("historique"); setTab("profil"); };
   const [celebration, setCelebration] = useState(null);
@@ -2322,7 +2428,7 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => { if (profile) store.set(K.profile, profile); }, [profile]);
-  useEffect(() => { applyTheme(profile?.theme || "nuit"); }, [profile?.theme]);
+  useEffect(() => { applyTheme(profile?.theme || "perle"); }, [profile?.theme]);
   useEffect(() => store.set(K.onboarded, onboarded), [onboarded]);
   useEffect(() => store.set(K.lifts, lifts), [lifts]);
   useEffect(() => store.set(K.prs, prs), [prs]);
@@ -2331,6 +2437,7 @@ export default function App() {
   useEffect(() => store.set(K.cardio, cardio), [cardio]);
   useEffect(() => store.set(K.xp, xpRaw), [xpRaw]);
   useEffect(() => store.set(K.exphotos, exPhotos), [exPhotos]);
+  useEffect(() => store.set(K.exvids, exVids), [exVids]);
   useEffect(() => { store.set("apex_live", live); }, [live]);
 
   // Demande au navigateur de CONSERVER les données du site (évite l'effacement automatique,
@@ -2489,7 +2596,38 @@ export default function App() {
   const deleteRoutine = (id) => setRoutines((prev) => prev.filter((r) => r.id !== id));
   const addPreset = (preset) => { setRoutines((prev) => [...prev, { ...preset, id: uid(), preset: false, exercises: preset.exercises.map((e) => ({ ...e })) }]); flash("Séance ajoutée à tes séances ✓"); };
 
+  // Séance terminée en attente de choix : conserver la routine d'origine ou la mettre à jour.
+  const [pendingFinish, setPendingFinish] = useState(null);
+
+  // La séance réalisée diffère-t-elle de la routine enregistrée ? (exos ajoutés/retirés/réordonnés, nb de séries changé)
+  const sessionDiffersFromRoutine = (session) => {
+    const r = routines.find((x) => x.id === session.routineId);
+    if (!r) return null; // routine non enregistrée (préconstruite lancée direct…) → pas de question
+    const a = (r.exercises || []).map((e) => `${e.key}:${e.sets || 3}`).join("|");
+    const b = (session.exercises || []).map((e) => `${e.key}:${e.sets.length}`).join("|");
+    return a !== b ? r : null;
+  };
+
   const completeSession = (session) => {
+    const changed = sessionDiffersFromRoutine(session);
+    if (changed) { setPendingFinish({ session, routine: changed }); return; }
+    finalizeSession(session, false);
+  };
+
+  const finalizeSession = (session, updateRoutine) => {
+    setPendingFinish(null);
+    if (updateRoutine) {
+      // La routine adopte la structure réellement effectuée aujourd'hui.
+      setRoutines((prev) => prev.map((r) => r.id !== session.routineId ? r : {
+        ...r,
+        exercises: session.exercises.map((se) => {
+          const old = (r.exercises || []).find((e) => e.key === se.key);
+          const lastReps = [...se.sets].reverse().find((s) => s.reps)?.reps;
+          return { key: se.key, sets: se.sets.length, targetReps: Number(lastReps) || old?.targetReps || 8, rest: se.rest || old?.rest || 90 };
+        }),
+      }));
+      flash("Routine mise à jour ✓");
+    }
     // état AVANT
     const beforeLevel = levelInfo.level;
     const beforeRanks = {}; MUSCLES.forEach((m) => (beforeRanks[m.key] = scoreToRank(muscleScores[m.key]).tierIdx));
@@ -2610,14 +2748,15 @@ export default function App() {
         {tab === "exos" && <ExoByMuscle lifts={lifts} prs={prs} bw={bw} setBestLift={setBestLift} setPR={setPR} progressionFor={progressionFor} exoCount={exoCount} weightHistoryFor={weightHistoryFor} onGoToSession={goToSession} flash={flash} exPhotos={exPhotos} onSetPhoto={setExPhoto} />}
         {tab === "seances" && (editingRoutine
           ? <RoutineEditor routine={editingRoutine} onSave={saveRoutine} onCancel={() => setEditingRoutine(null)} exPhotos={exPhotos} onSetPhoto={setExPhoto} />
-          : <SeancesHub sub={seancesSub} setSub={setSeancesSub} routines={routines} history={history}
+          : <SeancesHub sub={seancesSub} setSub={setSeancesSub} routines={routines} history={history} onImportYt={importRoutine}
               onNew={() => setEditingRoutine({ id: uid(), name: "", exercises: [] })} onEdit={setEditingRoutine} onDelete={deleteRoutine}
               onStart={(r) => { setLive({ routine: r, data: null, startedAt: Date.now(), pinned: {} }); setLiveOpen(true); }} onExport={(r) => exportRoutine(r, flash)} onAddPreset={addPreset}
               cardio={cardio} bw={bw} onAddCardio={addCardio} onClearCardio={() => setCardio([])} />)}
         {tab === "nutrition" && <Nutrition profile={profile} setProfile={setProfile} />}
       </main>
 
-      {live && liveOpen && <SessionLogger session={live} onChange={(patch) => setLive((c) => c ? { ...c, ...patch } : c)} lastSessionSets={lastSessionSets} prs={prs} muscleScores={muscleScores} exPhotos={exPhotos} onSetPhoto={setExPhoto} onFinish={completeSession} onCancel={() => { setLive(null); setLiveOpen(false); }} onMinimize={() => setLiveOpen(false)} />}
+      {pendingFinish && <RoutineUpdateModal pending={pendingFinish} onKeep={() => finalizeSession(pendingFinish.session, false)} onUpdate={() => finalizeSession(pendingFinish.session, true)} />}
+      {live && liveOpen && <SessionLogger session={live} onChange={(patch) => setLive((c) => c ? { ...c, ...patch } : c)} lastSessionSets={lastSessionSets} prs={prs} muscleScores={muscleScores} exPhotos={exPhotos} onSetPhoto={setExPhoto} exVids={exVids} onSetVid={setExVid} onFinish={completeSession} onCancel={() => { setLive(null); setLiveOpen(false); }} onMinimize={() => setLiveOpen(false)} />}
       {celebration && <Celebration data={celebration} onClose={() => { setCelebration(null); setTab("profil"); setProfilSub("historique"); }} />}
       <footer style={S.footer}>Données sur ton appareil. Pense à exporter une sauvegarde (onglet Données).</footer>
     </div>
@@ -2625,6 +2764,41 @@ export default function App() {
 }
 
 /* --------------------- CÉLÉBRATION (fin de séance) ------------------- */
+/* Fin de séance : la structure effectuée diffère de la routine → l'utilisateur choisit. */
+function RoutineUpdateModal({ pending, onKeep, onUpdate }) {
+  const { session, routine } = pending;
+  const oldKeys = (routine.exercises || []).map((e) => e.key);
+  const newKeys = (session.exercises || []).map((e) => e.key);
+  const added = newKeys.filter((k) => !oldKeys.includes(k)).map((k) => EX_BY_KEY[k]?.name || k);
+  const removed = oldKeys.filter((k) => !newKeys.includes(k)).map((k) => EX_BY_KEY[k]?.name || k);
+  const setsChanged = (session.exercises || []).filter((se) => {
+    const old = (routine.exercises || []).find((e) => e.key === se.key);
+    return old && (old.sets || 3) !== se.sets.length;
+  }).map((se) => EX_BY_KEY[se.key]?.name || se.key);
+  return (
+    <div style={{ ...S.overlay, alignItems: "center", padding: 16 }}>
+      <div style={{ ...S.card, width: "100%", maxWidth: 420, animation: "popIn .25s ease" }}>
+        <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>Ta séance a évolué 💪</div>
+        <div style={{ fontSize: 13.5, opacity: 0.75, lineHeight: 1.5 }}>
+          Ce que tu as fait aujourd'hui diffère de la routine « <b>{routine.name}</b> ». Que veux-tu faire ?
+        </div>
+        <div style={{ ...S.exoInner, marginTop: 10, fontSize: 12.5, display: "grid", gap: 4 }}>
+          {added.length > 0 && <div>➕ Ajouté : <b>{added.join(", ")}</b></div>}
+          {removed.length > 0 && <div>➖ Retiré : <b>{removed.join(", ")}</b></div>}
+          {setsChanged.length > 0 && <div>🔁 Séries modifiées : <b>{setsChanged.join(", ")}</b></div>}
+        </div>
+        <button style={{ ...S.btnPrimary, width: "100%", padding: 13, marginTop: 14 }} onClick={onUpdate}>
+          Mettre à jour la routine avec la séance du jour
+        </button>
+        <button style={{ ...S.btnGhost, width: "100%", padding: 12, marginTop: 8 }} onClick={onKeep}>
+          Conserver la routine d'origine
+        </button>
+        <div style={{ fontSize: 11, opacity: 0.5, marginTop: 8, textAlign: "center" }}>Dans les deux cas, la séance du jour est enregistrée dans ton historique.</div>
+      </div>
+    </div>
+  );
+}
+
 function Celebration({ data, onClose }) {
   const [xpShown, setXpShown] = useState(0);
   const [phase, setPhase] = useState(0); // 0 xp, 1 ranks, 2 level
@@ -3324,7 +3498,7 @@ function Settings({ profile, setProfile, dataTabProps, onResetOnboarding, accoun
         <div style={{ fontSize: 12.5, opacity: 0.6, marginBottom: 12 }}>Choisis l'ambiance de couleur de l'application.</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {Object.entries(THEMES).map(([k, t]) => {
-            const active = (profile.theme || "nuit") === k;
+            const active = (profile.theme || "perle") === k;
             return (
               <button key={k} onClick={() => setProfile({ ...profile, theme: k })}
                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 10, cursor: "pointer",
@@ -3595,14 +3769,14 @@ function Profil({ sub, setSub, overall, muscleScores, loggedCount, history, card
 }
 
 /* --------------------------- SÉANCES (hub) --------------------------- */
-function SeancesHub({ sub, setSub, routines, history, onNew, onEdit, onDelete, onStart, onExport, onAddPreset, cardio, bw, onAddCardio, onClearCardio }) {
+function SeancesHub({ sub, setSub, routines, history, onNew, onEdit, onDelete, onStart, onExport, onAddPreset, onImportYt, cardio, bw, onAddCardio, onClearCardio }) {
   const subs = [["base","Musculation"],["cardio","Cardio"],["callisthenie","Callisthénie"]];
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={{ display: "flex", gap: 6 }}>
         {subs.map(([k, l]) => <button key={k} onClick={() => setSub(k)} style={{ ...S.subTab, flex: 1, ...(sub === k ? S.subTabOn : {}) }}>{l}</button>)}
       </div>
-      {sub === "base" && <Seances routines={routines} history={history} onNew={onNew} onEdit={onEdit} onDelete={onDelete} onStart={onStart} onExport={onExport} onAddPreset={onAddPreset} />}
+      {sub === "base" && <Seances routines={routines} history={history} onNew={onNew} onEdit={onEdit} onDelete={onDelete} onStart={onStart} onExport={onExport} onAddPreset={onAddPreset} onImportYt={onImportYt} />}
       {sub === "cardio" && <Cardio cardio={cardio} bw={bw} onAdd={onAddCardio} onClear={onClearCardio} />}
       {sub === "callisthenie" && <Callisthenie />}
     </div>
@@ -3721,6 +3895,7 @@ function ExoByMuscle({ lifts, prs, bw, setBestLift, setPR, progressionFor, exoCo
             {!ex.isTime && <div style={{ marginTop: 14 }}><div style={S.miniLabel}>Charge max par séance (kg)</div><div style={{ marginTop: 6 }}><ProgressChart points={weightHistoryFor(ex.key)} unit="kg" onGoToSession={onGoToSession} /></div></div>}
             <div style={{ marginTop: 10, fontSize: 12.5, opacity: 0.6 }}>📊 Réalisé <b>{exoCount(ex.key)}</b> fois au total.</div>
             <div style={{ marginTop: 14 }}><div style={S.miniLabel}>Muscles ciblés</div>
+              {zoneOf(ex.key) && <div style={{ ...S.zoneTag, marginTop: 6, fontSize: 12.5 }}>🎯 Zone précise : {zoneOf(ex.key)}</div>}
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
                 {Object.entries(ex.muscles).sort((a, b) => b[1] - a[1]).map(([mk, w]) => <span key={mk} style={{ ...S.chip, opacity: 0.4 + w * 0.6 }}>{muscleLabel(mk)} {Math.round(w * 100)}%</span>)}
               </div></div>
@@ -3839,7 +4014,115 @@ function Field({ label, value, onChange, placeholder }) {
 /* ---------------------------- SÉANCES --------------------------------- */
 
 /* ---------------------------- SÉANCES --------------------------------- */
-function Seances({ routines, history, onNew, onEdit, onDelete, onStart, onExport, onAddPreset }) {
+/* ---------------- SÉANCE DEPUIS UNE VIDÉO YOUTUBE ---------------------
+   1. Colle l'URL d'une vidéo d'entraînement → on récupère son titre.
+   2. Colle la description / liste d'exercices de la vidéo → détection
+      automatique des exos (base APEX + alias) et des séries×reps (4x8, etc.).
+   3. Ajuste, puis enregistre : la vidéo reste attachée à la séance et se
+      regarde directement pendant l'entraînement. */
+function parseYtWorkoutText(text) {
+  const found = []; const seen = new Set();
+  const lines = String(text || "").split(/\n+/);
+  for (const raw of lines) {
+    const line = raw.trim(); if (!line || line.length > 120) continue;
+    // motifs "4x8", "4 x 8-12", "3 séries de 12", "3 sets of 10", "8 reps"
+    const sr = line.match(/(\d{1,2})\s*[x×*]\s*(\d{1,2})(?:\s*[-–à]\s*\d{1,2})?/i)
+      || line.match(/(\d{1,2})\s*(?:séries?|series|sets?)\s*(?:de|of|x)?\s*(\d{1,2})?/i);
+    // nettoie la ligne pour le matching (retire chiffres/horodatages/puces)
+    const cleaned = line.replace(/^\s*[\d:.\-–•·)\]]+\s*/, "").replace(/(\d{1,2})\s*[x×*]\s*[\d\-–à ]+/gi, "")
+      .replace(/(\d{1,2})\s*(?:séries?|series|sets?|reps?)(\s*(?:de|of|x)?\s*\d{0,2})?/gi, "").replace(/[()\[\]#@]/g, " ").trim();
+    if (cleaned.length < 3) continue;
+    const key = matchExercise(cleaned);
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      found.push({ key, sets: sr ? Math.min(10, Math.max(1, Number(sr[1]) || 3)) : 3, targetReps: sr && sr[2] ? Math.min(50, Math.max(1, Number(sr[2]))) : 8, rest: 90 });
+    }
+  }
+  return found;
+}
+function YoutubeImport({ onImport, onCancel }) {
+  const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
+  const [desc, setDesc] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const vid = parseYtId(url);
+  const parsed = useMemo(() => parseYtWorkoutText(desc), [desc]);
+  const [removedKeys, setRemovedKeys] = useState([]);
+  const exercises = parsed.filter((e) => !removedKeys.includes(e.key));
+
+  // Récupère le titre de la vidéo (best effort — fonctionne sans clé API).
+  useEffect(() => {
+    if (!vid) return;
+    let dead = false; setLoading(true);
+    fetch(`https://noembed.com/embed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${vid}`)}`)
+      .then((r) => r.json()).then((d) => { if (!dead && d && d.title) setTitle((t) => t || d.title); })
+      .catch(() => {}).finally(() => { if (!dead) setLoading(false); });
+    return () => { dead = true; };
+  }, [vid]);
+
+  const save = () => {
+    if (!vid) { setErr("Colle d'abord un lien YouTube valide."); return; }
+    if (!exercises.length) { setErr("Aucun exercice détecté — colle la description de la vidéo ou tape la liste des exos (un par ligne)."); return; }
+    onImport({ name: (title || "Séance YouTube").slice(0, 60), ytId: vid, exercises });
+  };
+
+  return (
+    <div style={{ ...S.overlay, alignItems: "center", padding: 16 }}>
+      <div style={{ ...S.card, width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto", animation: "popIn .25s ease" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <div style={{ fontSize: 17, fontWeight: 800 }}>🎬 Séance depuis YouTube</div>
+          <button style={{ ...S.btnGhost, padding: "4px 10px" }} onClick={onCancel}>×</button>
+        </div>
+
+        <div style={S.miniLabel}>1 · Lien de la vidéo</div>
+        <input value={url} onChange={(e) => { setUrl(e.target.value); setErr(""); }} placeholder="https://youtube.com/watch?v=…" style={{ ...S.input, marginTop: 6 }} />
+        {vid && (
+          <div style={{ marginTop: 10 }}>
+            <div style={S.ytWrap}>
+              <iframe style={S.ytFrame} src={ytEmbed(vid)} title="Aperçu vidéo" frameBorder="0" allow="encrypted-media; picture-in-picture" allowFullScreen />
+            </div>
+          </div>
+        )}
+
+        <div style={{ ...S.miniLabel, marginTop: 14 }}>2 · Nom de la séance</div>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={loading ? "Récupération du titre…" : "ex. Full body maison 30 min"} style={{ ...S.input, marginTop: 6 }} />
+
+        <div style={{ ...S.miniLabel, marginTop: 14 }}>3 · Description / liste des exercices</div>
+        <div style={{ fontSize: 11.5, opacity: 0.6, margin: "4px 0 6px" }}>Colle la description de la vidéo (ou tape les exos, un par ligne : « Développé couché 4x8 »). Les exercices sont détectés automatiquement.</div>
+        <textarea value={desc} onChange={(e) => { setDesc(e.target.value); setErr(""); }} rows={6} placeholder={"Squat 4x8\nDéveloppé couché 4x10\nTractions 3x8\n…"} style={{ ...S.input, resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }} />
+
+        {desc.trim() && (
+          <div style={{ marginTop: 10 }}>
+            <div style={S.miniLabel}>Exercices détectés ({exercises.length})</div>
+            <div style={{ display: "grid", gap: 6, marginTop: 6 }}>
+              {exercises.length === 0 && <div style={{ opacity: 0.5, fontSize: 13, padding: 8 }}>Rien de reconnu pour l'instant…</div>}
+              {exercises.map((e) => { const ex = EX_BY_KEY[e.key]; return (
+                <div key={e.key} style={S.pickRow}>
+                  <MuscleIcon muscles={ex.muscles} size={30} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{ex.name}</div>
+                    <div style={{ fontSize: 11, opacity: 0.55 }}>{e.sets} séries × {e.targetReps} reps</div>
+                  </div>
+                  <button style={{ ...S.btnGhost, color: "#ff6b6b", padding: "3px 9px", fontSize: 13 }} onClick={() => setRemovedKeys((p) => [...p, e.key])}>×</button>
+                </div>
+              ); })}
+            </div>
+          </div>
+        )}
+
+        {err && <div style={{ fontSize: 12.5, color: "#ff6b6b", marginTop: 10 }}>{err}</div>}
+        <button style={{ ...S.btnPrimary, width: "100%", padding: 13, marginTop: 14, opacity: vid && exercises.length ? 1 : 0.5 }} onClick={save}>
+          Enregistrer la séance {exercises.length ? `(${exercises.length} exos)` : ""}
+        </button>
+        <div style={{ fontSize: 11, opacity: 0.5, marginTop: 8, textAlign: "center" }}>La vidéo restera visionnable pendant la séance (bouton « ▶ Vidéo de la séance »).</div>
+      </div>
+    </div>
+  );
+}
+
+function Seances({ routines, history, onNew, onEdit, onDelete, onStart, onExport, onAddPreset, onImportYt }) {
+  const [ytOpen, setYtOpen] = useState(false);
   const [showPresets, setShowPresets] = useState(routines.length === 0);
   // dernière date où chaque routine a été faite (par nom)
   const lastDone = {};
@@ -3852,6 +4135,8 @@ function Seances({ routines, history, onNew, onEdit, onDelete, onStart, onExport
   return (
     <div style={{ display: "grid", gap: 12 }}>
       <button style={{ ...S.btnPrimary, width: "100%", padding: 14, fontSize: 15 }} onClick={onNew}>+ Créer ma séance</button>
+      <button style={{ ...S.btnGhost, width: "100%", padding: 13, fontSize: 14, fontWeight: 700 }} onClick={() => setYtOpen(true)}>🎬 Créer une séance depuis une vidéo YouTube</button>
+      {ytOpen && <YoutubeImport onImport={(r) => { setYtOpen(false); onImportYt && onImportYt(r); }} onCancel={() => setYtOpen(false)} />}
 
       <section style={S.card}>
         <div onClick={() => setShowPresets(!showPresets)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
@@ -3949,7 +4234,7 @@ function RoutineEditor({ routine, onSave, onCancel, exPhotos, onSetPhoto }) {
           <div style={{ marginTop: 10 }}>
             <input value={pSearch} onChange={(e) => setPSearch(e.target.value)} placeholder="🔍 Rechercher un exercice…" style={S.input} />
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
-              {MUSCLES.map((m) => <button key={m.key} onClick={() => setPMuscle(pMuscle === m.key ? null : m.key)} style={{ ...S.chip, cursor: "pointer", border: "1px solid", borderColor: pMuscle === m.key ? "#e0245e" : "#2a313d", background: pMuscle === m.key ? "#e0245e" : "#1c2230", color: pMuscle === m.key ? "#fff" : "#cdd4de" }}>{m.label}</button>)}
+              {MUSCLES.map((m) => <button key={m.key} onClick={() => setPMuscle(pMuscle === m.key ? null : m.key)} style={{ ...S.chip, cursor: "pointer", border: "1px solid", borderColor: pMuscle === m.key ? "var(--accent,#e0245e)" : "var(--border,#2a313d)", background: pMuscle === m.key ? "var(--accent,#e0245e)" : "var(--ghost,#1c2230)", color: pMuscle === m.key ? "#fff" : "var(--muted,#cdd4de)" }}>{m.label}</button>)}
             </div>
             <div style={{ marginTop: 10, display: "grid", gap: 12 }}>
               {pickerResults ? (
@@ -3959,7 +4244,7 @@ function RoutineEditor({ routine, onSave, onCancel, exPhotos, onSetPhoto }) {
                     <div key={ex.key} onClick={() => toggle(ex.key)} style={{ ...S.pickRow, ...(isSel(ex.key) ? S.pickRowOn : {}) }}>
                       <MuscleIcon muscles={ex.muscles} size={32} />
                       <span style={{ flex: 1, fontWeight: 600, fontSize: 13.5 }}>{ex.name}</span>
-                      <span style={{ fontSize: 18, color: isSel(ex.key) ? "#e0245e" : "#3a3f4a", fontWeight: 800 }}>{isSel(ex.key) ? "✓" : "+"}</span>
+                      <span style={{ fontSize: 18, color: isSel(ex.key) ? "var(--accent,#e0245e)" : "var(--muted-2,#3a3f4a)", fontWeight: 800 }}>{isSel(ex.key) ? "✓" : "+"}</span>
                     </div>
                   ))}
                 </div>
@@ -3971,7 +4256,7 @@ function RoutineEditor({ routine, onSave, onCancel, exPhotos, onSetPhoto }) {
                         <div key={ex.key} onClick={() => toggle(ex.key)} style={{ ...S.pickRow, ...(isSel(ex.key) ? S.pickRowOn : {}) }}>
                           <MuscleIcon muscles={ex.muscles} size={32} />
                           <span style={{ flex: 1, fontWeight: 600, fontSize: 13.5 }}>{ex.name}</span>
-                          <span style={{ fontSize: 18, color: isSel(ex.key) ? "#e0245e" : "#3a3f4a", fontWeight: 800 }}>{isSel(ex.key) ? "✓" : "+"}</span>
+                          <span style={{ fontSize: 18, color: isSel(ex.key) ? "var(--accent,#e0245e)" : "var(--muted-2,#3a3f4a)", fontWeight: 800 }}>{isSel(ex.key) ? "✓" : "+"}</span>
                         </div>
                       ))}
                     </div>
@@ -4000,8 +4285,54 @@ function MiniNum({ label, value, onChange, step = 1 }) {
   );
 }
 
-function SessionLogger({ session, onChange, lastSessionSets, prs, muscleScores, exPhotos, onSetPhoto, onFinish, onCancel, onMinimize }) {
+/* Panneau vidéo d'un exercice :
+   - si une vidéo a été enregistrée pour cet exo → lecteur intégré (embed direct, fiable) ;
+   - sinon → bouton de recherche YouTube + champ pour coller le lien d'une vidéo,
+     qui sera mémorisée pour toutes les prochaines séances. */
+function ExoVideoPanel({ exKey, name, vidId, onSetVid, ytUrl }) {
+  const [linkInput, setLinkInput] = useState("");
+  const [err, setErr] = useState("");
+  const save = () => {
+    const id = parseYtId(linkInput);
+    if (!id) { setErr("Lien non reconnu — colle une URL YouTube (watch, youtu.be, shorts…)"); return; }
+    onSetVid && onSetVid(exKey, id); setLinkInput(""); setErr("");
+  };
+  return (
+    <div style={{ marginBottom: 10 }}>
+      {vidId ? (
+        <>
+          <div style={S.ytWrap}>
+            <iframe style={S.ytFrame} src={ytEmbed(vidId)} title={`Vidéo ${name}`}
+              frameBorder="0" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <a href={ytWatch(vidId)} target="_blank" rel="noopener noreferrer" style={S.ytLink}>Ouvrir dans YouTube ↗</a>
+            <button style={{ ...S.ytLink, background: "none", border: "none", cursor: "pointer", padding: 0, opacity: 0.7 }} onClick={() => onSetVid && onSetVid(exKey, null)}>changer de vidéo</button>
+          </div>
+        </>
+      ) : (
+        <div style={{ ...S.exoInner, padding: 12 }}>
+          <a href={ytUrl} target="_blank" rel="noopener noreferrer" style={{ ...S.btnGhost, display: "block", textAlign: "center", textDecoration: "none", color: "#ff6b6b", fontWeight: 700 }}>
+            ▶ Chercher « {name} » sur YouTube ↗
+          </a>
+          <div style={{ fontSize: 11.5, opacity: 0.6, margin: "10px 0 6px" }}>Tu as trouvé LA bonne vidéo ? Colle son lien : elle sera intégrée ici à chaque séance.</div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <input value={linkInput} onChange={(e) => { setLinkInput(e.target.value); setErr(""); }} placeholder="https://youtube.com/watch?v=…" style={{ ...S.input, fontSize: 13 }} />
+            <button style={{ ...S.btnPrimary, padding: "8px 14px" }} onClick={save}>OK</button>
+          </div>
+          {err && <div style={{ fontSize: 11.5, color: "#ff6b6b", marginTop: 5 }}>{err}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SessionLogger({ session, onChange, lastSessionSets, prs, muscleScores, exPhotos, onSetPhoto, exVids, onSetVid, onFinish, onCancel, onMinimize }) {
   const routine = session.routine;
+  const [addOpen, setAddOpen] = useState(false);       // picker "+ Ajouter un exercice"
+  const [addSearch, setAddSearch] = useState("");
+  const [addMuscle, setAddMuscle] = useState(null);
+  const [showRoutineVid, setShowRoutineVid] = useState(false); // vidéo de la séance (routine importée de YouTube)
   const [elapsed, setElapsed] = useState(0);            // chrono séance
   const [rest, setRest] = useState(0);                  // chrono repos restant
   const [restTotal, setRestTotal] = useState(0);
@@ -4081,6 +4412,17 @@ function SessionLogger({ session, onChange, lastSessionSets, prs, muscleScores, 
     if (j < 0 || j >= prev.length) return prev;
     const next = [...prev]; [next[ei], next[j]] = [next[j], next[ei]]; return next;
   });
+  // Ajoute un exercice EN COURS de séance (n'importe lequel de la base).
+  const addExercise = (key) => {
+    const ex = EX_BY_KEY[key]; if (!ex) return;
+    setData((prev) => prev.some((e) => e.key === key) ? prev :
+      [...prev, { key, rest: 90, note: "", added: true, sets: Array.from({ length: 3 }, () => (ex.isTime ? { secs: "", done: false } : { weight: "", reps: "", done: false })) }]);
+    setAddOpen(false); setAddSearch(""); setAddMuscle(null);
+  };
+  const removeExercise = (ei) => {
+    const meta = EX_BY_KEY[data[ei]?.key];
+    if (confirm(`Retirer « ${meta?.name || "cet exercice"} » de la séance ?`)) setData((prev) => prev.filter((_, i) => i !== ei));
+  };
 
   return (
     <div style={S.overlay}>
@@ -4110,7 +4452,21 @@ function SessionLogger({ session, onChange, lastSessionSets, prs, muscleScores, 
         {rest > 0 && <div style={{ height: 4, background: "#1b1f27", borderRadius: 99, overflow: "hidden", marginBottom: 12 }}>
           <div style={{ height: "100%", width: `${(rest / (restTotal || 1)) * 100}%`, background: "#5ce0e0", transition: "width 1s linear" }} /></div>}
 
-        <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 10 }}>{routine.name || "Séance"}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <div style={{ fontSize: 20, fontWeight: 800, flex: 1 }}>{routine.name || "Séance"}</div>
+          {routine.ytId && (
+            <button style={{ ...S.ytBtn, ...(showRoutineVid ? S.ytBtnOn : {}) }} onClick={() => setShowRoutineVid((v) => !v)}>▶ Vidéo de la séance</button>
+          )}
+        </div>
+        {routine.ytId && showRoutineVid && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={S.ytWrap}>
+              <iframe style={S.ytFrame} src={ytEmbed(routine.ytId)} title="Vidéo de la séance"
+                frameBorder="0" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+            </div>
+            <a href={ytWatch(routine.ytId)} target="_blank" rel="noopener noreferrer" style={S.ytLink}>Ouvrir dans YouTube ↗</a>
+          </div>
+        )}
 
         {(() => {
           const pris = data.filter((ex) => isPriority(ex.key));
@@ -4150,6 +4506,7 @@ function SessionLogger({ session, onChange, lastSessionSets, prs, muscleScores, 
                       <span style={{ fontWeight: 700 }}>{meta.name}</span>
                       <span style={{ fontSize: 10, opacity: 0.45, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>n°{ei + 1}</span>
                     </div>
+                    {zoneOf(ex.key) && <div style={S.zoneTag}>🎯 {zoneOf(ex.key)}</div>}
                     {last && <div style={{ fontSize: 11.5, opacity: 0.5 }}>Dernière fois : {last.filter(s=>s.weight&&s.reps).map((s) => `${s.weight}×${s.reps}`).join(", ") || "—"}</div>}
                   </div>
                   {/* priorité manuelle */}
@@ -4158,15 +4515,9 @@ function SessionLogger({ session, onChange, lastSessionSets, prs, muscleScores, 
                   <button title="Voir la technique sur YouTube" style={{ ...S.ytBtn, ...(openYt[ex.key] ? S.ytBtnOn : {}) }} onClick={() => setOpenYt((o) => ({ ...o, [ex.key]: !o[ex.key] }))}>▶ YT</button>
                 </div>
 
-                {/* lecteur YouTube intégré */}
+                {/* panneau vidéo : lecteur intégré si une vidéo est enregistrée, sinon recherche + champ pour coller un lien */}
                 {openYt[ex.key] && (
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={S.ytWrap}>
-                      <iframe style={S.ytFrame} src={ytSearchEmbed(meta.name)} title={`YouTube ${meta.name}`}
-                        frameBorder="0" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-                    </div>
-                    <a href={meta.yt || yt(meta.name)} target="_blank" rel="noopener noreferrer" style={S.ytLink}>Ouvrir dans YouTube ↗</a>
-                  </div>
+                  <ExoVideoPanel exKey={ex.key} name={meta.name} vidId={exVids && exVids[ex.key]} onSetVid={onSetVid} ytUrl={meta.yt || yt(meta.name)} />
                 )}
 
                 {sugg && <div style={S.suggBox}>💡 {sugg.reason} (suggéré : {sugg.weight}kg × {sugg.reps})</div>}
@@ -4192,7 +4543,10 @@ function SessionLogger({ session, onChange, lastSessionSets, prs, muscleScores, 
                     );
                   })}
                 </div>
-                <button style={{ ...S.btnGhost, marginTop: 8, fontSize: 12 }} onClick={() => addSet(ei)}>+ série</button>
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <button style={{ ...S.btnGhost, fontSize: 12 }} onClick={() => addSet(ei)}>+ série</button>
+                  <button title="Retirer cet exercice de la séance" style={{ ...S.btnGhost, fontSize: 12, color: "#ff6b6b", marginLeft: "auto" }} onClick={() => removeExercise(ei)}>× retirer l'exo</button>
+                </div>
 
                 {/* commentaire de l'exercice */}
                 <textarea value={ex.note} onChange={(e) => setNote(ei, e.target.value)} placeholder="📝 Note (sensations, réglage machine, douleur…)"
@@ -4202,8 +4556,47 @@ function SessionLogger({ session, onChange, lastSessionSets, prs, muscleScores, 
           })}
         </div>
 
+        {/* ---- Ajouter un exercice PENDANT la séance ---- */}
+        <div style={{ marginTop: 14 }}>
+          {!addOpen ? (
+            <button style={{ ...S.btnGhost, width: "100%", padding: 13, fontSize: 14, fontWeight: 700, borderStyle: "dashed" }} onClick={() => setAddOpen(true)}>＋ Ajouter un exercice à la séance</button>
+          ) : (
+            <div style={{ ...S.card, padding: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <div style={{ fontWeight: 800 }}>Ajouter un exercice</div>
+                <button style={{ ...S.btnGhost, padding: "4px 10px", fontSize: 12 }} onClick={() => { setAddOpen(false); setAddSearch(""); setAddMuscle(null); }}>Fermer</button>
+              </div>
+              <input value={addSearch} onChange={(e) => setAddSearch(e.target.value)} placeholder="🔍 Rechercher un exercice…" style={S.input} autoFocus />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
+                {MUSCLES.map((m) => <button key={m.key} onClick={() => setAddMuscle(addMuscle === m.key ? null : m.key)} style={{ ...S.chip, cursor: "pointer", border: "1px solid", borderColor: addMuscle === m.key ? "var(--accent,#e0245e)" : "var(--border,#2a313d)", background: addMuscle === m.key ? "var(--accent,#e0245e)" : "var(--ghost,#1c2230)", color: addMuscle === m.key ? "#fff" : "var(--muted,#cdd4de)" }}>{m.label}</button>)}
+              </div>
+              <div style={{ marginTop: 10, display: "grid", gap: 6, maxHeight: 300, overflowY: "auto" }}>
+                {(() => {
+                  const q = addSearch.trim().toLowerCase();
+                  const list = EXERCISES.filter((e) => (!addMuscle || e.primary === addMuscle) && (!q || e.name.toLowerCase().includes(q) || (e.aliases || []).some((a) => a.includes(q)))).slice(0, 40);
+                  if (!q && !addMuscle) return <div style={{ opacity: 0.5, fontSize: 13, textAlign: "center", padding: 10 }}>Cherche par nom ou filtre par muscle.</div>;
+                  if (!list.length) return <div style={{ opacity: 0.5, fontSize: 13, textAlign: "center", padding: 10 }}>Aucun exercice trouvé.</div>;
+                  return list.map((ex2) => {
+                    const already = data.some((d) => d.key === ex2.key);
+                    return (
+                      <div key={ex2.key} onClick={() => !already && addExercise(ex2.key)} style={{ ...S.pickRow, ...(already ? { opacity: 0.4, cursor: "default" } : {}) }}>
+                        <MuscleIcon muscles={ex2.muscles} size={32} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13.5 }}>{ex2.name}</div>
+                          {zoneOf(ex2.key) && <div style={{ fontSize: 10.5, opacity: 0.55, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{zoneOf(ex2.key)}</div>}
+                        </div>
+                        <span style={{ fontSize: 18, color: already ? "var(--muted,#3a3f4a)" : "var(--accent,#e0245e)", fontWeight: 800 }}>{already ? "✓" : "+"}</span>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          )}
+        </div>
+
         <button style={{ ...S.btnPrimary, width: "100%", padding: 15, marginTop: 16, fontSize: 15 }}
-          onClick={() => onFinish({ routineId: routine.id, name: routine.name, durationSec: elapsed, exercises: data.map((ex) => ({ key: ex.key, note: ex.note || "", sets: ex.sets.map(({ done, ...rest }) => rest) })) })}>
+          onClick={() => onFinish({ routineId: routine.id, name: routine.name, durationSec: elapsed, exercises: data.map((ex) => ({ key: ex.key, note: ex.note || "", rest: ex.rest || 90, sets: ex.sets.map(({ done, ...rest }) => rest) })) })}>
           ✓ Terminer la séance ({fmtTime(elapsed)})
         </button>
         <button style={{ ...S.btnGhost, width: "100%", padding: 12, marginTop: 8, color: "#ff6b6b" }}
@@ -4542,68 +4935,69 @@ function parseHevyDate(str) {
 }
 /* ----------------------------- STYLES --------------------------------- */
 const S = {
-  subTab: { padding: "8px 14px", borderRadius: 8, border: "1px solid #2a313d", background: "#0e1218", color: "#8a92a0", fontWeight: 600, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 },
-  subTabOn: { background: "#1c2230", color: "#fff", borderColor: "#e0245e" },
-  periodBtn: { flex: 1, minWidth: 56, padding: "7px 8px", borderRadius: 8, border: "1px solid #2a313d", background: "#0e1218", color: "#8a92a0", fontWeight: 600, fontSize: 12.5, cursor: "pointer" },
-  periodBtnOn: { background: "#e0245e", color: "#fff", borderColor: "#e0245e" },
-  levelPill: { display: "flex", alignItems: "center", gap: 6, background: "#161b22", padding: "6px 14px", borderRadius: 99, border: "1px solid #2a3140" },
-  levelBadge: { width: 70, height: 70, borderRadius: 16, background: "#0e1218", border: "1px solid #2a3140", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  subTab: { padding: "8px 14px", borderRadius: 8, border: "1px solid var(--border,#2a313d)", background: "var(--field,#0e1218)", color: "var(--muted-2,#8a92a0)", fontWeight: 600, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 },
+  subTabOn: { background: "var(--ghost,#1c2230)", color: "var(--text,#fff)", borderColor: "var(--accent,#e0245e)", fontWeight: 700 },
+  periodBtn: { flex: 1, minWidth: 56, padding: "7px 8px", borderRadius: 8, border: "1px solid var(--border,#2a313d)", background: "var(--field,#0e1218)", color: "var(--muted-2,#8a92a0)", fontWeight: 600, fontSize: 12.5, cursor: "pointer" },
+  periodBtnOn: { background: "var(--accent,#e0245e)", color: "#fff", borderColor: "var(--accent,#e0245e)" },
+  levelPill: { display: "flex", alignItems: "center", gap: 6, background: "var(--ghost,#161b22)", padding: "6px 14px", borderRadius: 99, border: "1px solid #2a3140" },
+  levelBadge: { width: 70, height: 70, borderRadius: 16, background: "var(--field,#0e1218)", border: "1px solid #2a3140", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   obLabel: { fontSize: 11, opacity: 0.55, display: "block", marginBottom: 5, marginTop: 2 },
   app: { maxWidth: 560, margin: "0 auto", minHeight: "100vh", background: "var(--bg,#0d1015)", color: "var(--text,#e8ecf2)", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", display: "flex", flexDirection: "column" },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 18px 14px", position: "sticky", top: 0, zIndex: 10, background: "linear-gradient(180deg, #0d1015 70%, rgba(13,16,21,0))" },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 18px 14px", position: "sticky", top: 0, zIndex: 10, background: "var(--header-grad, linear-gradient(180deg, #0d1015 70%, rgba(13,16,21,0)))" },
   logo: { fontSize: 24, fontWeight: 900, letterSpacing: 1 },
   tagline: { fontSize: 11, opacity: 0.4, letterSpacing: 1, textTransform: "uppercase" },
-  bwPill: { display: "flex", alignItems: "center", gap: 6, background: "#161b22", padding: "6px 12px", borderRadius: 99, border: "1px solid #232833" },
-  bwInput: { width: 48, background: "transparent", border: "none", color: "#fff", fontWeight: 700, fontSize: 15, textAlign: "right", outline: "none" },
+  bwPill: { display: "flex", alignItems: "center", gap: 6, background: "var(--ghost,#161b22)", padding: "6px 12px", borderRadius: 99, border: "1px solid #232833" },
+  bwInput: { width: 48, background: "transparent", border: "none", color: "var(--text,#fff)", fontWeight: 700, fontSize: 15, textAlign: "right", outline: "none" },
   tabs: { display: "flex", gap: 4, padding: "0 12px 8px", overflowX: "auto" },
-  tab: { flexShrink: 0, padding: "8px 14px", borderRadius: 99, border: "none", background: "transparent", color: "#8a92a0", fontSize: 13.5, fontWeight: 600, cursor: "pointer", transition: ".2s", whiteSpace: "nowrap" },
+  tab: { flexShrink: 0, padding: "8px 14px", borderRadius: 99, border: "none", background: "transparent", color: "var(--muted-2,#8a92a0)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", transition: ".2s", whiteSpace: "nowrap" },
   tabActive: { background: "var(--accent,#e0245e)", color: "#fff" },
   main: { flex: 1, padding: "8px 14px 24px" },
   resumeBar: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, width: "calc(100% - 28px)", margin: "0 14px 8px", padding: "11px 14px", borderRadius: 12, border: "1px solid #3a6d4e", background: "linear-gradient(90deg, rgba(46,160,90,0.22), rgba(46,160,90,0.10))", color: "#eafff1", fontWeight: 700, fontSize: 13.5, cursor: "pointer", textAlign: "left", animation: "fadeIn .3s" },
   footer: { padding: "16px 18px 28px", fontSize: 11, opacity: 0.35, lineHeight: 1.5, textAlign: "center" },
-  card: { background: "var(--card,#141921)", border: "1px solid var(--card-border,#1f2530)", borderRadius: 16, padding: 18 },
+  card: { background: "var(--card,#141921)", border: "1px solid var(--card-border,#1f2530)", borderRadius: 16, padding: 18, boxShadow: "var(--shadow,none)" },
   heroCard: { background: "linear-gradient(135deg, #1a1f2b 0%, #141921 60%)", border: "1px solid #2a3140" },
   cardTitle: { fontWeight: 700, fontSize: 15, marginBottom: 4 },
   miniLabel: { fontSize: 11, letterSpacing: 1, opacity: 0.5, textTransform: "uppercase", fontWeight: 600 },
-  muscleDot: { width: 10, height: 10, borderRadius: 99, background: "#e0245e", boxShadow: "0 0 8px #e0245e" },
+  muscleDot: { width: 10, height: 10, borderRadius: 99, background: "var(--accent,#e0245e)", boxShadow: "0 0 8px #e0245e" },
   exoInner: { background: "var(--inner,#10151d)", border: "1px solid var(--card-border,#1c222d)", borderRadius: 12, padding: 12 },
-  exoIcon: { width: 44, height: 44, borderRadius: 12, background: "#1c2230", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#ff5c8a", flexShrink: 0 },
-  chip: { background: "#1c2230", padding: "4px 10px", borderRadius: 99, fontSize: 12, color: "#cdd4de" },
+  exoIcon: { width: 44, height: 44, borderRadius: 12, background: "var(--ghost,#1c2230)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#ff5c8a", flexShrink: 0 },
+  chip: { background: "var(--ghost,#1c2230)", padding: "4px 10px", borderRadius: 99, fontSize: 12, color: "var(--muted,#cdd4de)" },
   tipList: { margin: "8px 0 0", padding: 0, listStyle: "none", display: "grid", gap: 7 },
   tipItem: { fontSize: 13.5, lineHeight: 1.45, paddingLeft: 18, position: "relative", opacity: 0.85 },
-  input: { width: "100%", boxSizing: "border-box", background: "#0e1218", border: "1px solid #2a313d", borderRadius: 10, padding: "10px 12px", color: "#fff", fontSize: 15, outline: "none" },
-  logInput: { flex: 1, minWidth: 0, width: "100%", boxSizing: "border-box", background: "#0e1218", border: "1px solid #2a313d", borderRadius: 8, padding: "9px 10px", color: "#fff", fontSize: 15, outline: "none", textAlign: "center" },
-  logDone: { borderColor: "#2e7d4f", background: "#10201a" },
-  logPR: { borderColor: "#c9a227", background: "#1f1c10" },
-  previewBox: { marginTop: 12, background: "#0e1218", borderRadius: 10, padding: "10px 12px", fontSize: 13.5 },
-  suggBox: { background: "#10201a", border: "1px solid #1d3b2c", borderRadius: 8, padding: "8px 10px", fontSize: 12.5, color: "#8fe0b0" },
+  input: { width: "100%", boxSizing: "border-box", background: "var(--field,#0e1218)", border: "1px solid var(--border,#2a313d)", borderRadius: 10, padding: "10px 12px", color: "var(--text,#fff)", fontSize: 15, outline: "none" },
+  logInput: { flex: 1, minWidth: 0, width: "100%", boxSizing: "border-box", background: "var(--field,#0e1218)", border: "1px solid var(--border,#2a313d)", borderRadius: 8, padding: "9px 10px", color: "var(--text,#fff)", fontSize: 15, outline: "none", textAlign: "center" },
+  logDone: { borderColor: "#2e7d4f", background: "var(--ok-bg,#10201a)" },
+  logPR: { borderColor: "#c9a227", background: "var(--pr-bg,#1f1c10)" },
+  previewBox: { marginTop: 12, background: "var(--field,#0e1218)", borderRadius: 10, padding: "10px 12px", fontSize: 13.5 },
+  suggBox: { background: "var(--ok-bg,#10201a)", border: "1px solid var(--ok-border,#1d3b2c)", borderRadius: 8, padding: "8px 10px", fontSize: 12.5, color: "var(--ok-text,#8fe0b0)" },
   btnPrimary: { background: "var(--accent,#e0245e)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 18px", fontWeight: 700, fontSize: 14, cursor: "pointer", whiteSpace: "nowrap" },
-  btnGhost: { background: "#1c2230", color: "#cdd4de", border: "1px solid #2a313d", borderRadius: 10, padding: "10px 14px", fontWeight: 600, fontSize: 13.5, cursor: "pointer", whiteSpace: "nowrap" },
-  stepBtn: { width: 30, height: 30, borderRadius: 8, border: "1px solid #2a313d", background: "#1c2230", color: "#fff", fontSize: 18, fontWeight: 700, cursor: "pointer", lineHeight: 1 },
-  checkBtn: { width: 34, height: 34, borderRadius: 8, border: "1px solid #2a313d", background: "#1c2230", color: "#4a5160", fontSize: 16, fontWeight: 800, cursor: "pointer", flexShrink: 0 },
+  btnGhost: { background: "var(--ghost,#1c2230)", color: "var(--muted,#cdd4de)", border: "1px solid var(--border,#2a313d)", borderRadius: 10, padding: "10px 14px", fontWeight: 600, fontSize: 13.5, cursor: "pointer", whiteSpace: "nowrap" },
+  stepBtn: { width: 30, height: 30, borderRadius: 8, border: "1px solid var(--border,#2a313d)", background: "var(--ghost,#1c2230)", color: "var(--text,#fff)", fontSize: 18, fontWeight: 700, cursor: "pointer", lineHeight: 1 },
+  checkBtn: { width: 34, height: 34, borderRadius: 8, border: "1px solid var(--border,#2a313d)", background: "var(--ghost,#1c2230)", color: "var(--muted-2,#4a5160)", fontSize: 16, fontWeight: 800, cursor: "pointer", flexShrink: 0 },
   checkOn: { background: "#2e7d4f", color: "#fff", borderColor: "#2e7d4f" },
-  pickRow: { display: "flex", alignItems: "center", gap: 10, background: "#10151d", border: "1px solid #1c222d", borderRadius: 10, padding: "8px 12px", cursor: "pointer", transition: ".15s" },
-  pickRowOn: { borderColor: "#e0245e", background: "#1a1016" },
-  goalBtn: { flex: 1, minWidth: 0, padding: "10px 6px", borderRadius: 10, border: "1px solid #2a313d", background: "#0e1218", color: "#8a92a0", fontWeight: 600, fontSize: 13, cursor: "pointer", lineHeight: 1.2, textAlign: "center" },
-  goalBtnActive: { background: "#e0245e", color: "#fff", borderColor: "#e0245e" },
+  pickRow: { display: "flex", alignItems: "center", gap: 10, background: "var(--inner,#10151d)", border: "1px solid #1c222d", borderRadius: 10, padding: "8px 12px", cursor: "pointer", transition: ".15s" },
+  pickRowOn: { borderColor: "var(--accent,#e0245e)", background: "var(--inner,#1a1016)" },
+  goalBtn: { flex: 1, minWidth: 0, padding: "10px 6px", borderRadius: 10, border: "1px solid var(--border,#2a313d)", background: "var(--field,#0e1218)", color: "var(--muted-2,#8a92a0)", fontWeight: 600, fontSize: 13, cursor: "pointer", lineHeight: 1.2, textAlign: "center" },
+  goalBtnActive: { background: "var(--accent,#e0245e)", color: "#fff", borderColor: "var(--accent,#e0245e)" },
   overlay: { position: "fixed", inset: 0, background: "rgba(6,8,12,.82)", backdropFilter: "blur(4px)", zIndex: 100, display: "flex", justifyContent: "center", alignItems: "flex-end" },
-  sheet: { width: "100%", maxWidth: 560, maxHeight: "94vh", overflowY: "auto", background: "#0d1015", borderTopLeftRadius: 22, borderTopRightRadius: 22, border: "1px solid #232833", padding: "16px 16px 28px", animation: "slideUp .28s cubic-bezier(.2,.8,.2,1)" },
-  chronoBar: { display: "flex", justifyContent: "space-between", alignItems: "center", background: "#141921", border: "1px solid #232833", borderRadius: 14, padding: "12px 16px", marginBottom: 12, position: "sticky", top: 0, zIndex: 5 },
-  restMini: { background: "#1c2230", border: "1px solid #2a313d", color: "#cdd4de", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600, cursor: "pointer" },
-  toast: { position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", background: "#1a1f2b", border: "1px solid #2a3140", color: "#fff", padding: "10px 18px", borderRadius: 99, fontSize: 13.5, fontWeight: 600, zIndex: 200, boxShadow: "0 8px 24px rgba(0,0,0,.4)", animation: "slideDown .25s ease" },
-  moveBtn: { width: 24, height: 18, borderRadius: 5, border: "1px solid #2a313d", background: "#1c2230", color: "#cdd4de", fontSize: 9, fontWeight: 700, cursor: "pointer", lineHeight: 1, padding: 0, display: "flex", alignItems: "center", justifyContent: "center" },
-  ytBtn: { background: "#1c2230", border: "1px solid #2a313d", color: "#ff6b6b", borderRadius: 8, padding: "6px 9px", fontSize: 12, fontWeight: 800, cursor: "pointer", flexShrink: 0, letterSpacing: 0.3 },
-  ytBtnOn: { background: "#ff0000", borderColor: "#ff0000", color: "#fff" },
+  sheet: { width: "100%", maxWidth: 560, maxHeight: "94vh", overflowY: "auto", background: "var(--sheet,#0d1015)", borderTopLeftRadius: 22, borderTopRightRadius: 22, border: "1px solid #232833", padding: "16px 16px 28px", animation: "slideUp .28s cubic-bezier(.2,.8,.2,1)" },
+  chronoBar: { display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--card,#141921)", border: "1px solid #232833", borderRadius: 14, padding: "12px 16px", marginBottom: 12, position: "sticky", top: 0, zIndex: 5 },
+  restMini: { background: "var(--ghost,#1c2230)", border: "1px solid var(--border,#2a313d)", color: "var(--muted,#cdd4de)", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600, cursor: "pointer" },
+  toast: { position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", background: "var(--card,#1a1f2b)", border: "1px solid #2a3140", color: "var(--text,#fff)", padding: "10px 18px", borderRadius: 99, fontSize: 13.5, fontWeight: 600, zIndex: 200, boxShadow: "0 8px 24px rgba(0,0,0,.4)", animation: "slideDown .25s ease" },
+  moveBtn: { width: 24, height: 18, borderRadius: 5, border: "1px solid var(--border,#2a313d)", background: "var(--ghost,#1c2230)", color: "var(--muted,#cdd4de)", fontSize: 9, fontWeight: 700, cursor: "pointer", lineHeight: 1, padding: 0, display: "flex", alignItems: "center", justifyContent: "center" },
+  ytBtn: { background: "var(--ghost,#1c2230)", border: "1px solid var(--border,#2a313d)", color: "#ff6b6b", borderRadius: 8, padding: "6px 9px", fontSize: 12, fontWeight: 800, cursor: "pointer", flexShrink: 0, letterSpacing: 0.3 },
+  ytBtnOn: { background: "#ff0000", borderColor: "#ff0000", color: "var(--text,#fff)" },
   ytWrap: { position: "relative", width: "100%", paddingTop: "56.25%", borderRadius: 10, overflow: "hidden", background: "#000", border: "1px solid #232833" },
   ytFrame: { position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" },
   ytLink: { display: "inline-block", marginTop: 6, fontSize: 12, color: "#5ce0e0", textDecoration: "none", fontWeight: 600 },
   delSetBtn: { width: 30, height: 30, borderRadius: 8, border: "1px solid #3a2730", background: "#231318", color: "#ff6b6b", fontSize: 20, fontWeight: 800, cursor: "pointer", flexShrink: 0, lineHeight: 1 },
-  noteInput: { width: "100%", boxSizing: "border-box", marginTop: 8, background: "#0e1218", border: "1px solid #2a313d", borderRadius: 8, padding: "8px 10px", color: "#cdd4de", fontSize: 13, outline: "none", resize: "vertical", fontFamily: "inherit", lineHeight: 1.4 },
+  zoneTag: { fontSize: 11, color: "var(--accent-glow,#ff8fb0)", opacity: 0.9, marginTop: 1, lineHeight: 1.35 },
+  noteInput: { width: "100%", boxSizing: "border-box", marginTop: 8, background: "var(--field,#0e1218)", border: "1px solid var(--border,#2a313d)", borderRadius: 8, padding: "8px 10px", color: "var(--muted,#cdd4de)", fontSize: 13, outline: "none", resize: "vertical", fontFamily: "inherit", lineHeight: 1.4 },
   cardPriority: { borderColor: "#e8b13a", boxShadow: "0 0 0 1px #e8b13a, 0 0 18px rgba(232,177,58,.18)" },
-  priBanner: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: "#1f1c10", border: "1px solid #5a4a1a", borderRadius: 8, padding: "5px 10px", marginBottom: 10, fontSize: 12, fontWeight: 700, color: "#f4d03f" },
-  priPin: { background: "transparent", border: "1px solid #5a4a1a", color: "#f4d03f", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600, cursor: "pointer" },
-  priSummary: { background: "#1f1c10", border: "1px solid #5a4a1a", borderRadius: 10, padding: "10px 12px", marginBottom: 12, fontSize: 13, color: "#f4d03f", lineHeight: 1.4 },
-  starBtn: { background: "transparent", border: "none", color: "#3a3f4a", fontSize: 20, cursor: "pointer", flexShrink: 0, lineHeight: 1, padding: 2 },
+  priBanner: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: "var(--pri-bg,#1f1c10)", border: "1px solid var(--pri-border,#5a4a1a)", borderRadius: 8, padding: "5px 10px", marginBottom: 10, fontSize: 12, fontWeight: 700, color: "var(--pri-text,#f4d03f)" },
+  priPin: { background: "transparent", border: "1px solid var(--pri-border,#5a4a1a)", color: "var(--pri-text,#f4d03f)", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600, cursor: "pointer" },
+  priSummary: { background: "var(--pri-bg,#1f1c10)", border: "1px solid var(--pri-border,#5a4a1a)", borderRadius: 10, padding: "10px 12px", marginBottom: 12, fontSize: 13, color: "var(--pri-text,#f4d03f)", lineHeight: 1.4 },
+  starBtn: { background: "transparent", border: "none", color: "var(--muted-2,#3a3f4a)", fontSize: 20, cursor: "pointer", flexShrink: 0, lineHeight: 1, padding: 2 },
   starOn: { color: "#e8b13a" },
 };
 const KEYFRAMES = `
